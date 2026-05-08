@@ -1,0 +1,1574 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1280" />
+  <title>ELE — Etablissement Laadhar d’Electricité</title>
+  <link rel="stylesheet" href="colors_and_type.css" />
+  <link rel="icon" type="image/svg+xml" href="assets/icon_bolt.svg" />
+  <style> body { margin: 0; } </style>
+  <template id="__bundler_thumbnail">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+      <rect width="200" height="200" fill="#0F2447"/>
+      <rect x="60" y="40" width="80" height="80" rx="12" fill="none" stroke="#E30613" stroke-width="6"/>
+      <path d="M118 56 L88 96 H106 L94 132 L130 80 H112 Z" fill="#E30613"/>
+      <text x="100" y="160" text-anchor="middle" fill="#fff" font-family="Georgia,serif" font-size="22" font-weight="600" letter-spacing="3">ELE</text>
+    </svg>
+  </template>
+  <script>
+    window.__ELE_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "primaryRed": "#E30613",
+      "navy": "#152849",
+      "heroHeadline": "Powering excellence",
+      "heroAccent": "across borders.",
+      "heroLead": "For nearly fifty years, ELE has delivered the electrical backbone of airports, hospitals, hotels, and water infrastructure across Tunisia and Africa.",
+      "heroEyebrow": "Since 1978 \u00b7 Tunisia \u2192 Africa",
+      "showStats": true,
+      "showAbout": true,
+      "ctaSubject": "Demande de devis \u2014 site ELE",
+      "ctaEmail": "inquiry.laadhar@gmail.com"
+    }/*EDITMODE-END*/;
+  </script>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- ═══ tweaks-panel.jsx ═══ -->
+  <script type="text/babel">
+
+// tweaks-panel.jsx
+// Reusable Tweaks shell + form-control helpers.
+//
+// Owns the host protocol (listens for __activate_edit_mode / __deactivate_edit_mode,
+// posts __edit_mode_available / __edit_mode_set_keys / __edit_mode_dismissed) so
+// individual prototypes don't re-roll it. Ships a consistent set of controls so you
+// don't hand-draw <input type="range">, segmented radios, steppers, etc.
+//
+// Usage (in an HTML file that loads React + Babel):
+//
+//   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+//     "primaryColor": "#D97757",
+//     "palette": ["#D97757", "#29261b", "#f6f4ef"],
+//     "fontSize": 16,
+//     "density": "regular",
+//     "dark": false
+//   }/*EDITMODE-END*/;
+//
+//   function App() {
+//     const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+//     return (
+//       <div style={{ fontSize: t.fontSize, color: t.primaryColor }}>
+//         Hello
+//         <TweaksPanel>
+//           <TweakSection label="Typography" />
+//           <TweakSlider label="Font size" value={t.fontSize} min={10} max={32} unit="px"
+//                        onChange={(v) => setTweak('fontSize', v)} />
+//           <TweakRadio  label="Density" value={t.density}
+//                        options={['compact', 'regular', 'comfy']}
+//                        onChange={(v) => setTweak('density', v)} />
+//           <TweakSection label="Theme" />
+//           <TweakColor  label="Primary" value={t.primaryColor}
+//                        options={['#D97757', '#2A6FDB', '#1F8A5B', '#7A5AE0']}
+//                        onChange={(v) => setTweak('primaryColor', v)} />
+//           <TweakColor  label="Palette" value={t.palette}
+//                        options={[['#D97757', '#29261b', '#f6f4ef'],
+//                                  ['#475569', '#0f172a', '#f1f5f9']]}
+//                        onChange={(v) => setTweak('palette', v)} />
+//           <TweakToggle label="Dark mode" value={t.dark}
+//                        onChange={(v) => setTweak('dark', v)} />
+//         </TweaksPanel>
+//       </div>
+//     );
+//   }
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+const __TWEAKS_STYLE = `
+  .twk-panel{position:fixed;right:16px;bottom:16px;z-index:2147483646;width:280px;
+    max-height:calc(100vh - 32px);display:flex;flex-direction:column;
+    transform:scale(var(--dc-inv-zoom,1));transform-origin:bottom right;
+    background:rgba(250,249,247,.78);color:#29261b;
+    -webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
+    border:.5px solid rgba(255,255,255,.6);border-radius:14px;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 12px 40px rgba(0,0,0,.18);
+    font:11.5px/1.4 ui-sans-serif,system-ui,-apple-system,sans-serif;overflow:hidden}
+  .twk-hd{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 8px 10px 14px;cursor:move;user-select:none}
+  .twk-hd b{font-size:12px;font-weight:600;letter-spacing:.01em}
+  .twk-x{appearance:none;border:0;background:transparent;color:rgba(41,38,27,.55);
+    width:22px;height:22px;border-radius:6px;cursor:default;font-size:13px;line-height:1}
+  .twk-x:hover{background:rgba(0,0,0,.06);color:#29261b}
+  .twk-body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px;
+    overflow-y:auto;overflow-x:hidden;min-height:0;
+    scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.15) transparent}
+  .twk-body::-webkit-scrollbar{width:8px}
+  .twk-body::-webkit-scrollbar-track{background:transparent;margin:2px}
+  .twk-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:4px;
+    border:2px solid transparent;background-clip:content-box}
+  .twk-body::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.25);
+    border:2px solid transparent;background-clip:content-box}
+  .twk-row{display:flex;flex-direction:column;gap:5px}
+  .twk-row-h{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+  .twk-lbl{display:flex;justify-content:space-between;align-items:baseline;
+    color:rgba(41,38,27,.72)}
+  .twk-lbl>span:first-child{font-weight:500}
+  .twk-val{color:rgba(41,38,27,.5);font-variant-numeric:tabular-nums}
+
+  .twk-sect{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:rgba(41,38,27,.45);padding:10px 0 0}
+  .twk-sect:first-child{padding-top:0}
+
+  .twk-field{appearance:none;width:100%;height:26px;padding:0 8px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:7px;
+    background:rgba(255,255,255,.6);color:inherit;font:inherit;outline:none}
+  .twk-field:focus{border-color:rgba(0,0,0,.25);background:rgba(255,255,255,.85)}
+  select.twk-field{padding-right:22px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='rgba(0,0,0,.5)' d='M0 0h10L5 6z'/></svg>");
+    background-repeat:no-repeat;background-position:right 8px center}
+
+  .twk-slider{appearance:none;-webkit-appearance:none;width:100%;height:4px;margin:6px 0;
+    border-radius:999px;background:rgba(0,0,0,.12);outline:none}
+  .twk-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:14px;height:14px;border-radius:50%;background:#fff;
+    border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+  .twk-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;
+    background:#fff;border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+
+  .twk-seg{position:relative;display:flex;padding:2px;border-radius:8px;
+    background:rgba(0,0,0,.06);user-select:none}
+  .twk-seg-thumb{position:absolute;top:2px;bottom:2px;border-radius:6px;
+    background:rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(0,0,0,.12);
+    transition:left .15s cubic-bezier(.3,.7,.4,1),width .15s}
+  .twk-seg.dragging .twk-seg-thumb{transition:none}
+  .twk-seg button{appearance:none;position:relative;z-index:1;flex:1;border:0;
+    background:transparent;color:inherit;font:inherit;font-weight:500;min-height:22px;
+    border-radius:6px;cursor:default;padding:4px 6px;line-height:1.2;
+    overflow-wrap:anywhere}
+
+  .twk-toggle{position:relative;width:32px;height:18px;border:0;border-radius:999px;
+    background:rgba(0,0,0,.15);transition:background .15s;cursor:default;padding:0}
+  .twk-toggle[data-on="1"]{background:#34c759}
+  .twk-toggle i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+  .twk-toggle[data-on="1"] i{transform:translateX(14px)}
+
+  .twk-num{display:flex;align-items:center;height:26px;padding:0 0 0 8px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:7px;background:rgba(255,255,255,.6)}
+  .twk-num-lbl{font-weight:500;color:rgba(41,38,27,.6);cursor:ew-resize;
+    user-select:none;padding-right:8px}
+  .twk-num input{flex:1;min-width:0;height:100%;border:0;background:transparent;
+    font:inherit;font-variant-numeric:tabular-nums;text-align:right;padding:0 8px 0 0;
+    outline:none;color:inherit;-moz-appearance:textfield}
+  .twk-num input::-webkit-inner-spin-button,.twk-num input::-webkit-outer-spin-button{
+    -webkit-appearance:none;margin:0}
+  .twk-num-unit{padding-right:8px;color:rgba(41,38,27,.45)}
+
+  .twk-btn{appearance:none;height:26px;padding:0 12px;border:0;border-radius:7px;
+    background:rgba(0,0,0,.78);color:#fff;font:inherit;font-weight:500;cursor:default}
+  .twk-btn:hover{background:rgba(0,0,0,.88)}
+  .twk-btn.secondary{background:rgba(0,0,0,.06);color:inherit}
+  .twk-btn.secondary:hover{background:rgba(0,0,0,.1)}
+
+  .twk-swatch{appearance:none;-webkit-appearance:none;width:56px;height:22px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:6px;padding:0;cursor:default;
+    background:transparent;flex-shrink:0}
+  .twk-swatch::-webkit-color-swatch-wrapper{padding:0}
+  .twk-swatch::-webkit-color-swatch{border:0;border-radius:5.5px}
+  .twk-swatch::-moz-color-swatch{border:0;border-radius:5.5px}
+
+  .twk-chips{display:flex;gap:6px}
+  .twk-chip{position:relative;appearance:none;flex:1;min-width:0;height:46px;
+    padding:0;border:0;border-radius:6px;overflow:hidden;cursor:default;
+    box-shadow:0 0 0 .5px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.06);
+    transition:transform .12s cubic-bezier(.3,.7,.4,1),box-shadow .12s}
+  .twk-chip:hover{transform:translateY(-1px);
+    box-shadow:0 0 0 .5px rgba(0,0,0,.18),0 4px 10px rgba(0,0,0,.12)}
+  .twk-chip[data-on="1"]{box-shadow:0 0 0 1.5px rgba(0,0,0,.85),
+    0 2px 6px rgba(0,0,0,.15)}
+  .twk-chip>span{position:absolute;top:0;bottom:0;right:0;width:34%;
+    display:flex;flex-direction:column;box-shadow:-1px 0 0 rgba(0,0,0,.1)}
+  .twk-chip>span>i{flex:1;box-shadow:0 -1px 0 rgba(0,0,0,.1)}
+  .twk-chip>span>i:first-child{box-shadow:none}
+  .twk-chip svg{position:absolute;top:6px;left:6px;width:13px;height:13px;
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+`;
+
+// ── useTweaks ───────────────────────────────────────────────────────────────
+// Single source of truth for tweak values. setTweak persists via the host
+// (__edit_mode_set_keys → host rewrites the EDITMODE block on disk).
+function useTweaks(defaults) {
+  const [values, setValues] = React.useState(defaults);
+  // Accepts either setTweak('key', value) or setTweak({ key: value, ... }) so a
+  // useState-style call doesn't write a "[object Object]" key into the persisted
+  // JSON block.
+  const setTweak = React.useCallback((keyOrEdits, val) => {
+    const edits = typeof keyOrEdits === 'object' && keyOrEdits !== null
+      ? keyOrEdits : { [keyOrEdits]: val };
+    setValues((prev) => ({ ...prev, ...edits }));
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, '*');
+    // Same-window signal so in-page listeners (deck-stage rail thumbnails)
+    // can react — the parent message only reaches the host, not peers.
+    window.dispatchEvent(new CustomEvent('tweakchange', { detail: edits }));
+  }, []);
+  return [values, setTweak];
+}
+
+// ── TweaksPanel ─────────────────────────────────────────────────────────────
+// Floating shell. Registers the protocol listener BEFORE announcing
+// availability — if the announce ran first, the host's activate could land
+// before our handler exists and the toolbar toggle would silently no-op.
+// The close button posts __edit_mode_dismissed so the host's toolbar toggle
+// flips off in lockstep; the host echoes __deactivate_edit_mode back which
+// is what actually hides the panel.
+function TweaksPanel({ title = 'Tweaks', noDeckControls = false, children }) {
+  const [open, setOpen] = React.useState(false);
+  const dragRef = React.useRef(null);
+  // Auto-inject a rail toggle when a <deck-stage> is on the page. The
+  // toggle drives the deck's per-viewer _railVisible via window message;
+  // state is mirrored from the same localStorage key the deck reads so
+  // the control reflects reality across reloads. The mechanism is the
+  // message — authors who want custom placement can post it directly
+  // and pass noDeckControls to suppress this one.
+  const hasDeckStage = React.useMemo(
+    () => typeof document !== 'undefined' && !!document.querySelector('deck-stage'),
+    [],
+  );
+  // Hide the toggle until the host has actually enabled the rail (the
+  // __omelette_rail_enabled window message, posted only when the
+  // omelette_deck_rail_enabled flag is on for this user). The initial read
+  // covers TweaksPanel mounting after the message already arrived; the
+  // listener covers the common case of mounting first.
+  const [railEnabled, setRailEnabled] = React.useState(
+    () => hasDeckStage && !!document.querySelector('deck-stage')?._railEnabled,
+  );
+  React.useEffect(() => {
+    if (!hasDeckStage || railEnabled) return undefined;
+    const onMsg = (e) => {
+      if (e.data && e.data.type === '__omelette_rail_enabled') setRailEnabled(true);
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, [hasDeckStage, railEnabled]);
+  const [railVisible, setRailVisible] = React.useState(() => {
+    try { return localStorage.getItem('deck-stage.railVisible') !== '0'; } catch (e) { return true; }
+  });
+  const toggleRail = (on) => {
+    setRailVisible(on);
+    window.postMessage({ type: '__deck_rail_visible', on }, '*');
+  };
+  const offsetRef = React.useRef({ x: 16, y: 16 });
+  const PAD = 16;
+
+  const clampToViewport = React.useCallback(() => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const w = panel.offsetWidth, h = panel.offsetHeight;
+    const maxRight = Math.max(PAD, window.innerWidth - w - PAD);
+    const maxBottom = Math.max(PAD, window.innerHeight - h - PAD);
+    offsetRef.current = {
+      x: Math.min(maxRight, Math.max(PAD, offsetRef.current.x)),
+      y: Math.min(maxBottom, Math.max(PAD, offsetRef.current.y)),
+    };
+    panel.style.right = offsetRef.current.x + 'px';
+    panel.style.bottom = offsetRef.current.y + 'px';
+  }, []);
+
+  React.useEffect(() => {
+    if (!open) return;
+    clampToViewport();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', clampToViewport);
+      return () => window.removeEventListener('resize', clampToViewport);
+    }
+    const ro = new ResizeObserver(clampToViewport);
+    ro.observe(document.documentElement);
+    return () => ro.disconnect();
+  }, [open, clampToViewport]);
+
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      const t = e?.data?.type;
+      if (t === '__activate_edit_mode') setOpen(true);
+      else if (t === '__deactivate_edit_mode') setOpen(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const dismiss = () => {
+    setOpen(false);
+    window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*');
+  };
+
+  const onDragStart = (e) => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const r = panel.getBoundingClientRect();
+    const sx = e.clientX, sy = e.clientY;
+    const startRight = window.innerWidth - r.right;
+    const startBottom = window.innerHeight - r.bottom;
+    const move = (ev) => {
+      offsetRef.current = {
+        x: startRight - (ev.clientX - sx),
+        y: startBottom - (ev.clientY - sy),
+      };
+      clampToViewport();
+    };
+    const up = () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+    };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
+
+  if (!open) return null;
+  return (
+    <>
+      <style>{__TWEAKS_STYLE}</style>
+      <div ref={dragRef} className="twk-panel" data-noncommentable=""
+           style={{ right: offsetRef.current.x, bottom: offsetRef.current.y }}>
+        <div className="twk-hd" onMouseDown={onDragStart}>
+          <b>{title}</b>
+          <button className="twk-x" aria-label="Close tweaks"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={dismiss}>✕</button>
+        </div>
+        <div className="twk-body">
+          {children}
+          {hasDeckStage && railEnabled && !noDeckControls && (
+            <TweakSection label="Deck">
+              <TweakToggle label="Thumbnail rail" value={railVisible} onChange={toggleRail} />
+            </TweakSection>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── Layout helpers ──────────────────────────────────────────────────────────
+
+function TweakSection({ label, children }) {
+  return (
+    <>
+      <div className="twk-sect">{label}</div>
+      {children}
+    </>
+  );
+}
+
+function TweakRow({ label, value, children, inline = false }) {
+  return (
+    <div className={inline ? 'twk-row twk-row-h' : 'twk-row'}>
+      <div className="twk-lbl">
+        <span>{label}</span>
+        {value != null && <span className="twk-val">{value}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ── Controls ────────────────────────────────────────────────────────────────
+
+function TweakSlider({ label, value, min = 0, max = 100, step = 1, unit = '', onChange }) {
+  return (
+    <TweakRow label={label} value={`${value}${unit}`}>
+      <input type="range" className="twk-slider" min={min} max={max} step={step}
+             value={value} onChange={(e) => onChange(Number(e.target.value))} />
+    </TweakRow>
+  );
+}
+
+function TweakToggle({ label, value, onChange }) {
+  return (
+    <div className="twk-row twk-row-h">
+      <div className="twk-lbl"><span>{label}</span></div>
+      <button type="button" className="twk-toggle" data-on={value ? '1' : '0'}
+              role="switch" aria-checked={!!value}
+              onClick={() => onChange(!value)}><i /></button>
+    </div>
+  );
+}
+
+function TweakRadio({ label, value, options, onChange }) {
+  const trackRef = React.useRef(null);
+  const [dragging, setDragging] = React.useState(false);
+  // The active value is read by pointer-move handlers attached for the lifetime
+  // of a drag — ref it so a stale closure doesn't fire onChange for every move.
+  const valueRef = React.useRef(value);
+  valueRef.current = value;
+
+  // Segments wrap mid-word once per-segment width runs out. The track is
+  // ~248px (280 panel − 28 body pad − 4 seg pad), each button loses 12px
+  // to its own padding, and 11.5px system-ui averages ~6.3px/char — so 2
+  // options fit ~16 chars each, 3 fit ~10. Past that (or >3 options), fall
+  // back to a dropdown rather than wrap.
+  const labelLen = (o) => String(typeof o === 'object' ? o.label : o).length;
+  const maxLen = options.reduce((m, o) => Math.max(m, labelLen(o)), 0);
+  const fitsAsSegments = maxLen <= ({ 2: 16, 3: 10 }[options.length] ?? 0);
+  if (!fitsAsSegments) {
+    // <select> emits strings — map back to the original option value so the
+    // fallback stays type-preserving (numbers, booleans) like the segment path.
+    const resolve = (s) => {
+      const m = options.find((o) => String(typeof o === 'object' ? o.value : o) === s);
+      return m === undefined ? s : typeof m === 'object' ? m.value : m;
+    };
+    return <TweakSelect label={label} value={value} options={options}
+                        onChange={(s) => onChange(resolve(s))} />;
+  }
+  const opts = options.map((o) => (typeof o === 'object' ? o : { value: o, label: o }));
+  const idx = Math.max(0, opts.findIndex((o) => o.value === value));
+  const n = opts.length;
+
+  const segAt = (clientX) => {
+    const r = trackRef.current.getBoundingClientRect();
+    const inner = r.width - 4;
+    const i = Math.floor(((clientX - r.left - 2) / inner) * n);
+    return opts[Math.max(0, Math.min(n - 1, i))].value;
+  };
+
+  const onPointerDown = (e) => {
+    setDragging(true);
+    const v0 = segAt(e.clientX);
+    if (v0 !== valueRef.current) onChange(v0);
+    const move = (ev) => {
+      if (!trackRef.current) return;
+      const v = segAt(ev.clientX);
+      if (v !== valueRef.current) onChange(v);
+    };
+    const up = () => {
+      setDragging(false);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+
+  return (
+    <TweakRow label={label}>
+      <div ref={trackRef} role="radiogroup" onPointerDown={onPointerDown}
+           className={dragging ? 'twk-seg dragging' : 'twk-seg'}>
+        <div className="twk-seg-thumb"
+             style={{ left: `calc(2px + ${idx} * (100% - 4px) / ${n})`,
+                      width: `calc((100% - 4px) / ${n})` }} />
+        {opts.map((o) => (
+          <button key={o.value} type="button" role="radio" aria-checked={o.value === value}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </TweakRow>
+  );
+}
+
+function TweakSelect({ label, value, options, onChange }) {
+  return (
+    <TweakRow label={label}>
+      <select className="twk-field" value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map((o) => {
+          const v = typeof o === 'object' ? o.value : o;
+          const l = typeof o === 'object' ? o.label : o;
+          return <option key={v} value={v}>{l}</option>;
+        })}
+      </select>
+    </TweakRow>
+  );
+}
+
+function TweakText({ label, value, placeholder, onChange, multiline }) {
+  return (
+    <TweakRow label={label}>
+      {multiline
+        ? <textarea className="twk-field" rows={3} value={value} placeholder={placeholder}
+                    onChange={(e) => onChange(e.target.value)}
+                    style={{resize: "vertical", padding: "6px 8px", height: "auto", lineHeight: 1.4}} />
+        : <input className="twk-field" type="text" value={value} placeholder={placeholder}
+                 onChange={(e) => onChange(e.target.value)} />
+      }
+    </TweakRow>
+  );
+}
+
+function TweakNumber({ label, value, min, max, step = 1, unit = '', onChange }) {
+  const clamp = (n) => {
+    if (min != null && n < min) return min;
+    if (max != null && n > max) return max;
+    return n;
+  };
+  const startRef = React.useRef({ x: 0, val: 0 });
+  const onScrubStart = (e) => {
+    e.preventDefault();
+    startRef.current = { x: e.clientX, val: value };
+    const decimals = (String(step).split('.')[1] || '').length;
+    const move = (ev) => {
+      const dx = ev.clientX - startRef.current.x;
+      const raw = startRef.current.val + dx * step;
+      const snapped = Math.round(raw / step) * step;
+      onChange(clamp(Number(snapped.toFixed(decimals))));
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  return (
+    <div className="twk-num">
+      <span className="twk-num-lbl" onPointerDown={onScrubStart}>{label}</span>
+      <input type="number" value={value} min={min} max={max} step={step}
+             onChange={(e) => onChange(clamp(Number(e.target.value)))} />
+      {unit && <span className="twk-num-unit">{unit}</span>}
+    </div>
+  );
+}
+
+// Relative-luminance contrast pick — checkmarks drawn over a swatch need to
+// read on both #111 and #fafafa without per-option configuration. Hex input
+// only (#rgb / #rrggbb); named or rgb()/hsl() colors fall through to "light".
+function __twkIsLight(hex) {
+  const h = String(hex).replace('#', '');
+  const x = h.length === 3 ? h.replace(/./g, (c) => c + c) : h.padEnd(6, '0');
+  const n = parseInt(x.slice(0, 6), 16);
+  if (Number.isNaN(n)) return true;
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return r * 299 + g * 587 + b * 114 > 148000;
+}
+
+const __TwkCheck = ({ light }) => (
+  <svg viewBox="0 0 14 14" aria-hidden="true">
+    <path d="M3 7.2 5.8 10 11 4.2" fill="none" strokeWidth="2.2"
+          strokeLinecap="round" strokeLinejoin="round"
+          stroke={light ? 'rgba(0,0,0,.78)' : '#fff'} />
+  </svg>
+);
+
+// TweakColor — curated color/palette picker. Each option is either a single
+// hex string or an array of 1-5 hex strings; the card adapts — a lone color
+// renders solid, a palette renders colors[0] as the hero (left ~2/3) with the
+// rest stacked in a sharp column on the right. onChange emits the
+// option in the shape it was passed (string stays string, array stays array).
+// Without options it falls back to the native color input for back-compat.
+function TweakColor({ label, value, options, onChange }) {
+  if (!options || !options.length) {
+    return (
+      <div className="twk-row twk-row-h">
+        <div className="twk-lbl"><span>{label}</span></div>
+        <input type="color" className="twk-swatch" value={value}
+               onChange={(e) => onChange(e.target.value)} />
+      </div>
+    );
+  }
+  // Native <input type=color> emits lowercase hex per the HTML spec, so
+  // compare case-insensitively. String() guards JSON.stringify(undefined),
+  // which returns the primitive undefined (no .toLowerCase).
+  const key = (o) => String(JSON.stringify(o)).toLowerCase();
+  const cur = key(value);
+  return (
+    <TweakRow label={label}>
+      <div className="twk-chips" role="radiogroup">
+        {options.map((o, i) => {
+          const colors = Array.isArray(o) ? o : [o];
+          const [hero, ...rest] = colors;
+          const sup = rest.slice(0, 4);
+          const on = key(o) === cur;
+          return (
+            <button key={i} type="button" className="twk-chip" role="radio"
+                    aria-checked={on} data-on={on ? '1' : '0'}
+                    aria-label={colors.join(', ')} title={colors.join(' · ')}
+                    style={{ background: hero }}
+                    onClick={() => onChange(o)}>
+              {sup.length > 0 && (
+                <span>
+                  {sup.map((c, j) => <i key={j} style={{ background: c }} />)}
+                </span>
+              )}
+              {on && <__TwkCheck light={__twkIsLight(hero)} />}
+            </button>
+          );
+        })}
+      </div>
+    </TweakRow>
+  );
+}
+
+function TweakButton({ label, onClick, secondary = false }) {
+  return (
+    <button type="button" className={secondary ? 'twk-btn secondary' : 'twk-btn'}
+            onClick={onClick}>{label}</button>
+  );
+}
+
+Object.assign(window, {
+  useTweaks, TweaksPanel, TweakSection, TweakRow,
+  TweakSlider, TweakToggle, TweakRadio, TweakSelect,
+  TweakText, TweakNumber, TweakColor, TweakButton,
+});
+
+  </script>
+
+  <!-- ═══ Header.jsx ═══ -->
+  <script type="text/babel">
+// Header.jsx — top navigation bar
+const TRANSLATIONS = {
+  fr: {
+    nav: ["L'entreprise", "Services", "Références", "International", "Contact"],
+    cta: "Demander un devis →",
+  },
+  en: {
+    nav: ["Company", "Services", "References", "International", "Contact"],
+    cta: "Request a quote →",
+  },
+};
+
+const Header = ({ lang = "fr", onLangChange }) => {
+  const [active, setActive] = React.useState(0);
+  const navRef = React.useRef(null);
+  const itemRefs = React.useRef([]);
+  const [indicator, setIndicator] = React.useState({ left: 0, width: 0, ready: false });
+
+  const t = TRANSLATIONS[lang] || TRANSLATIONS.fr;
+  const targets = ["company", "services", "references", "references", "contact"];
+  const links = t.nav.map((label, i) => ({ label, target: targets[i] }));
+
+  const scrollTo = (id) => {
+    const el = document.getElementById(id);
+    if (el) window.scrollTo({ top: el.offsetTop - 72, behavior: "smooth" });
+  };
+
+  const measureIndicator = () => {
+    const el = itemRefs.current[active];
+    const nav = navRef.current;
+    if (!el || !nav) return;
+    const navRect = nav.getBoundingClientRect();
+    const itemRect = el.getBoundingClientRect();
+    setIndicator({
+      left: itemRect.left - navRect.left,
+      width: itemRect.width,
+      ready: true,
+    });
+  };
+
+  React.useLayoutEffect(() => {
+    measureIndicator();
+  }, [active, lang]);
+
+  React.useEffect(() => {
+    window.addEventListener("resize", measureIndicator);
+    return () => window.removeEventListener("resize", measureIndicator);
+  }, [active]);
+
+  const toggleLang = () => onLangChange && onLangChange(lang === "fr" ? "en" : "fr");
+
+  return (
+    <header style={{
+      position: "sticky", top: 0, zIndex: 50,
+      background: "rgba(255,255,255,0.96)",
+      backdropFilter: "blur(6px)",
+      borderBottom: "1px solid var(--border-1)",
+    }}>
+      <div style={{
+        maxWidth: 1280, margin: "0 auto", padding: "0 32px",
+        height: 72, display: "flex", alignItems: "center", justifyContent: "space-between"
+      }}>
+        <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({top: 0, behavior: "smooth"}); }}
+          style={{display: "flex", alignItems: "center", gap: 10, textDecoration: "none"}}>
+          <img src="assets/logo_ele.png" alt="ELE"
+            style={{height: 36}}
+            onError={(e) => { e.target.src = "assets/logo_ele_transparent.png"; }} />
+        </a>
+
+        <nav ref={navRef} style={{display: "flex", gap: 28, position: "relative", alignItems: "center"}}>
+          {/* Sliding red indicator */}
+          {indicator.ready && (
+            <span style={{
+              position: "absolute",
+              bottom: -2,
+              left: indicator.left,
+              width: indicator.width,
+              height: 2,
+              background: "var(--ele-red)",
+              transition: "left 280ms cubic-bezier(0.2,0,0,1), width 280ms cubic-bezier(0.2,0,0,1)",
+              borderRadius: 1,
+            }} />
+          )}
+          {links.map((l, i) => (
+            <a key={i}
+              ref={(el) => { itemRefs.current[i] = el; }}
+              href={`#${l.target}`}
+              onClick={(e) => { e.preventDefault(); setActive(i); scrollTo(l.target); }}
+              style={{
+                color: active === i ? "var(--ele-navy)" : "var(--ele-ink-1)",
+                textDecoration: "none",
+                fontSize: 14, fontWeight: active === i ? 600 : 500,
+                paddingBottom: 4, cursor: "pointer",
+                transition: "color 200ms, font-weight 200ms",
+              }}>
+              {l.label}
+            </a>
+          ))}
+        </nav>
+
+        <div style={{display: "flex", gap: 10, alignItems: "center"}}>
+          <button onClick={toggleLang} aria-label="Toggle language" style={{
+            background: "transparent",
+            border: "1px solid var(--border-2)",
+            borderRadius: 4,
+            color: "var(--fg-2)",
+            fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", cursor: "pointer",
+            fontFamily: "var(--font-sans)",
+            padding: "5px 10px",
+          }}>
+            <span style={{color: lang === "fr" ? "var(--ele-navy)" : "var(--fg-3)"}}>FR</span>
+            <span style={{margin: "0 4px", color: "var(--border-2)"}}>·</span>
+            <span style={{color: lang === "en" ? "var(--ele-navy)" : "var(--fg-3)"}}>EN</span>
+          </button>
+          <button onClick={() => scrollTo("contact")} style={{
+            background: "var(--ele-red)", color: "#fff", border: "none",
+            padding: "10px 18px", borderRadius: 4, fontWeight: 600, fontSize: 13,
+            cursor: "pointer", fontFamily: "var(--font-sans)"
+          }}>{t.cta}</button>
+        </div>
+      </div>
+    </header>
+  );
+};
+window.Header = Header;
+
+  </script>
+
+  <!-- ═══ Hero.jsx ═══ -->
+  <script type="text/babel">
+// Hero.jsx — primary hero
+const Hero = ({ eyebrow, headline, accent, lead, lang = "fr" }) => {
+  const labels = {
+    fr: { cta: "Demander un devis →", refs: "Voir nos références" },
+    en: { cta: "Request a quote →",   refs: "View our references" },
+  };
+  const lbl = labels[lang] || labels.fr;
+
+  const scrollTo = (id) => {
+    const el = document.getElementById(id);
+    if (el) window.scrollTo({ top: el.offsetTop - 72, behavior: "smooth" });
+  };
+  return (
+  <section style={{
+    position: "relative", overflow: "hidden",
+    background: "linear-gradient(135deg, #0F2447 0%, #1A3668 60%, #2E4F8C 100%)",
+    color: "#fff",
+    padding: "96px 32px 120px"
+  }}>
+    <div style={{
+      position: "absolute", inset: 0,
+      backgroundImage: "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)",
+      backgroundSize: "48px 48px",
+      pointerEvents: "none"
+    }}/>
+    <div style={{
+      position: "absolute", right: -120, top: -80,
+      width: 480, height: 480, borderRadius: 24,
+      border: "5px solid rgba(227, 6, 19, 0.25)",
+      transform: "rotate(8deg)", pointerEvents: "none"
+    }}/>
+    <div style={{maxWidth: 1280, margin: "0 auto", position: "relative"}}>
+      <div style={{
+        color: "var(--ele-red)", fontSize: 12, fontWeight: 700,
+        letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 20
+      }}>{eyebrow}</div>
+      <h1 style={{
+        fontFamily: "var(--font-display)", fontWeight: 800,
+        fontSize: "clamp(56px, 7vw, 104px)",
+        lineHeight: 0.92, letterSpacing: "-0.005em",
+        textTransform: "uppercase", margin: "0 0 32px",
+        maxWidth: 1100
+      }}>
+        {headline}{" "}
+        <span style={{fontFamily: "var(--font-serif)", fontStyle: "italic", fontWeight: 400, color: "var(--ele-red)", textTransform: "none", letterSpacing: 0}}>
+          {accent}
+        </span>
+      </h1>
+      <p style={{
+        fontFamily: "var(--font-serif)", fontStyle: "italic",
+        fontSize: 22, lineHeight: 1.5, color: "rgba(255,255,255,0.85)",
+        maxWidth: 720, margin: "0 0 40px"
+      }}>
+        {lead}
+      </p>
+      <div style={{display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap"}}>
+        <button onClick={() => scrollTo("contact")} style={{
+          background: "var(--ele-red)", color: "#fff", border: "none",
+          padding: "14px 26px", borderRadius: 4, fontWeight: 600, fontSize: 15,
+          cursor: "pointer"
+        }}>{lbl.cta}</button>
+        <button onClick={() => scrollTo("references")} style={{
+          background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,0.4)",
+          padding: "14px 26px", borderRadius: 4, fontWeight: 600, fontSize: 15,
+          cursor: "pointer"
+        }}>{lbl.refs}</button>
+      </div>
+    </div>
+  </section>
+  );
+};
+window.Hero = Hero;
+
+  </script>
+
+  <!-- ═══ Stats.jsx ═══ -->
+  <script type="text/babel">
+// Stats.jsx — heritage strip
+const Stats = ({ lang = "fr" }) => {
+  const items = {
+    fr: [
+      { n: "1978", l: "Année de fondation" },
+      { n: "48+", l: "Années d'expérience" },
+      { n: "14", l: "Pays · Tunisie & Afrique" },
+      { n: "200+", l: "Projets livrés" },
+    ],
+    en: [
+      { n: "1978", l: "Year founded" },
+      { n: "48+", l: "Years of experience" },
+      { n: "14", l: "Countries · Tunisia & Africa" },
+      { n: "200+", l: "Projects delivered" },
+    ],
+  };
+  const data = items[lang] || items.fr;
+  return (
+    <section style={{background: "var(--ele-paper)", padding: "48px 32px", borderTop: "1px solid var(--border-1)", borderBottom: "1px solid var(--border-1)"}}>
+      <div style={{maxWidth: 1280, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 32}}>
+        {data.map((it, i) => (
+          <div key={i} style={{borderLeft: i === 0 ? "none" : "1px solid var(--border-1)", paddingLeft: i === 0 ? 0 : 24}}>
+            <div style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 56, lineHeight: 1, color: "var(--ele-navy)"}}>{it.n}</div>
+            <div style={{marginTop: 8, fontSize: 13, color: "var(--fg-3)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600}}>{it.l}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+};
+window.Stats = Stats;
+
+  </script>
+
+  <!-- ═══ About.jsx ═══ -->
+  <script type="text/babel">
+// About.jsx — company history & heritage
+const About = ({ lang = "fr" }) => {
+  const content = {
+    fr: {
+      eyebrow: "À propos",
+      headline: "Bientôt cinquante ans",
+      headlineAccent: "au service du courant.",
+      intro: [
+        "Fondée en 1978 à Tunis par M. Abdelhamid Laadhar, l'Etablissement Laadhar d'Electricité est l'une des sociétés d'installation électrique pionnières de Tunisie. Sa croissance a été construite sur l'excellence technique, jamais sur le marketing — les grands donneurs d'ordre la recommandaient parce qu'elle livrait.",
+        "Des décennies d'aéroports internationaux, de palaces hôteliers, d'universités, d'hôpitaux et de stations de pompage ont forgé une réputation qui traverse les frontières. Depuis 2008, ELE opère en Afrique subsaharienne et en Europe, exportant son savoir-faire sur les projets les plus exigeants du continent.",
+        "Aujourd'hui, une nouvelle génération d'ingénieurs porte la même exigence d'exécution : <em>livrer une infrastructure fiable, maintenable, dont on peut être fier.</em>",
+      ],
+      pillarsTitle: "Trois piliers, une identité",
+      pillars: [
+        { icon: "★", title: "Qualité", body: "Des installations durables, fiables et conformes aux plus hauts standards. La réputation d'ELE s'est bâtie sur la qualité d'exécution et la confiance des clients." },
+        { icon: "⊛", title: "Héritage", body: "Près de cinq décennies d'expérience sur les infrastructures les plus critiques de Tunisie — aéroports, hôpitaux, hôtels 5★, universités, stations d'eau." },
+        { icon: "→", title: "Ambition internationale", body: "Depuis 2008, ELE exporte son savoir-faire au Congo, en Mauritanie et au-delà. Une capacité prouvée d'opérer hors de son marché d'origine dans des conditions exigeantes." },
+      ],
+      timelineTitle: "Jalons clés",
+      milestones: [
+        { y: "1978", t: "Fondation à Sfax", d: "M. Abdelhamid Laadhar fonde l'Etablissement Laadhar d'Electricité. L'entreprise s'impose rapidement comme un acteur de référence de l'installation électrique en Tunisie." },
+        { y: "1985", t: "Premiers grands chantiers publics", d: "ELE est retenue sur ses premiers projets d'infrastructure publique — bâtiments administratifs, équipements collectifs, réseaux." },
+        { y: "1995", t: "Spécialisation MT / BT", d: "Montée en compétence sur la moyenne et basse tension : postes de transformation, TGBT, groupes électrogènes pour hôpitaux et hôtels." },
+        { y: "2003", t: "Aéroports & hôtellerie 5★", d: "Aéroport Djerba-Zarzis, Sfax-Thyna, Hôtel Nour Palace — ELE devient une référence nationale sur les sites critiques et l'hôtellerie de luxe." },
+        { y: "2008", t: "Expansion africaine", d: "Premiers contrats au Congo (Brazzaville, Pointe-Noire) puis Mauritanie. ELE exporte son savoir-faire au-delà des frontières tunisiennes." },
+        { y: "2018", t: "Courant faible & smart-buildings", d: "Intégration complète des métiers GTC/BMS, sécurité incendie adressable, structured cabling, CCTV et contrôle d'accès." },
+        { y: "2024", t: "Photovoltaïque & transition énergétique", d: "Diversification vers le PV, les systèmes hybrides et le suivi énergétique pour accompagner la transition énergétique des clients." },
+      ],
+    },
+    en: {
+      eyebrow: "About us",
+      headline: "Nearly fifty years",
+      headlineAccent: "powering infrastructure.",
+      intro: [
+        "Founded in 1978 in Tunis by Mr. Laadhar, <strong>Etablissement Laadhar d'Electricité (ELE)</strong> is one of Tunisia's pioneering electrical contracting companies. Its growth was built on technical excellence alone — major project owners recommended ELE because it delivered.",
+        "Decades of international airports, five-star hotels, universities, hospitals and pumping stations forged a reputation that crosses borders. Since 2008, ELE has operated in sub-Saharan Africa and Europe, exporting its expertise to the continent's most demanding projects.",
+        "Today, a new generation of engineers carries the same standard: <em>deliver reliable, maintainable infrastructure that stands the test of time.</em>",
+      ],
+      pillarsTitle: "Three pillars, one identity",
+      pillars: [
+        { icon: "★", title: "Quality", body: "Durable, reliable, high-standard installations. ELE's reputation was built on workmanship and trust — the best form of marketing in a demanding industry." },
+        { icon: "⊛", title: "Heritage", body: "Nearly five decades of experience on Tunisia's most critical infrastructure — airports, hospitals, five-star hotels, universities and water stations." },
+        { icon: "→", title: "International ambition", body: "Since 2008, ELE has exported its expertise to Congo, Mauritania and beyond — proven capability to operate outside its home market in challenging conditions." },
+      ],
+      timelineTitle: "Key milestones",
+      milestones: [
+        { y: "1978", t: "Founded in Tunis", d: "Mr. Laadhar establishes Etablissement Laadhar d'Electricité. The company quickly becomes a reference contractor in Tunisian electrical installation." },
+        { y: "1985", t: "First major public projects", d: "ELE is selected for its first public infrastructure projects — administrative buildings, public facilities and electrical networks." },
+        { y: "1995", t: "MV / LV specialisation", d: "Growing expertise in medium and low voltage: transformer substations, main switchboards, generators for hospitals and hotels." },
+        { y: "2003", t: "Airports & 5-star hospitality", d: "Djerba-Zarzis Airport, Sfax-Thyna Airport, Nour Palace Hotel — ELE becomes a national reference for critical sites and luxury hospitality." },
+        { y: "2008", t: "African expansion", d: "First contracts in Congo (Brazzaville, Pointe-Noire) then Mauritania. ELE exports its expertise beyond Tunisian borders." },
+        { y: "2018", t: "Low-current & smart buildings", d: "Full integration of BMS/GTC, addressable fire safety, structured cabling, CCTV and access control for connected buildings." },
+        { y: "2024", t: "Photovoltaic & energy transition", d: "Diversification into PV, hybrid systems and energy monitoring to support clients' energy transition goals." },
+      ],
+    },
+  };
+
+  const c = content[lang] || content.fr;
+
+  return (
+    <section id="company" style={{padding: "96px 32px", background: "var(--ele-paper)"}}>
+      <div style={{maxWidth: 1280, margin: "0 auto"}}>
+
+        {/* Header + intro */}
+        <div style={{display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 64, marginBottom: 72, alignItems: "start"}}>
+          <div>
+            <div style={{color: "var(--ele-red)", fontSize: 12, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 16}}>{c.eyebrow}</div>
+            <h2 style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 56, lineHeight: 1.05, color: "var(--ele-navy)", textTransform: "uppercase", margin: "0 0 16px"}}>
+              {c.headline}{" "}
+              <em style={{fontFamily: "var(--font-serif)", fontWeight: 400, color: "var(--ele-red)", textTransform: "none", letterSpacing: 0}}>{c.headlineAccent}</em>
+            </h2>
+          </div>
+          <div style={{fontFamily: "var(--font-serif)", fontSize: 18, lineHeight: 1.7, color: "var(--fg-2)"}}>
+            {c.intro.map((p, i) => (
+              <p key={i} style={{margin: i < c.intro.length - 1 ? "0 0 16px" : "0"}}
+                dangerouslySetInnerHTML={{__html: p}} />
+            ))}
+          </div>
+        </div>
+
+        {/* Three pillars */}
+        <div style={{marginBottom: 72}}>
+          <div style={{fontSize: 11, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ele-red)", marginBottom: 24}}>{c.pillarsTitle}</div>
+          <div style={{display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24}}>
+            {c.pillars.map((p, i) => (
+              <div key={i} style={{
+                padding: "28px 28px 28px",
+                background: "#fff",
+                border: "1px solid var(--border-1)",
+                borderRadius: 8,
+                borderTop: "3px solid var(--ele-red)",
+              }}>
+                <div style={{fontFamily: "var(--font-display)", fontSize: 28, color: "var(--ele-red)", marginBottom: 12, lineHeight: 1}}>{p.icon}</div>
+                <h3 style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 22, color: "var(--ele-navy)", margin: "0 0 10px", textTransform: "uppercase"}}>{p.title}</h3>
+                <p style={{fontFamily: "var(--font-serif)", fontSize: 15, lineHeight: 1.6, color: "var(--fg-2)", margin: 0}}>{p.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Timeline */}
+        <div>
+          <div style={{fontSize: 11, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ele-red)", marginBottom: 32}}>{c.timelineTitle}</div>
+          <div style={{position: "relative"}}>
+            <div style={{position: "absolute", left: 90, top: 8, bottom: 8, width: 2, background: "var(--border-1)"}}/>
+            <div style={{display: "flex", flexDirection: "column", gap: 28}}>
+              {c.milestones.map((m, i) => (
+                <div key={i} style={{display: "grid", gridTemplateColumns: "80px 1fr", gap: 32, alignItems: "start"}}>
+                  <div style={{fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 22, color: "var(--ele-red)", textAlign: "right", paddingTop: 4}}>{m.y}</div>
+                  <div style={{position: "relative", paddingLeft: 32}}>
+                    <span style={{position: "absolute", left: -7, top: 10, width: 16, height: 16, borderRadius: 999, background: "var(--ele-red)", border: "3px solid var(--ele-paper)"}}/>
+                    <h3 style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 22, color: "var(--ele-navy)", margin: "0 0 4px"}}>{m.t}</h3>
+                    <p style={{fontFamily: "var(--font-serif)", fontSize: 16, lineHeight: 1.55, color: "var(--fg-2)", margin: 0, maxWidth: 720}}>{m.d}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+};
+window.About = About;
+
+  </script>
+
+  <!-- ═══ Services.jsx ═══ -->
+  <script type="text/babel">
+// Services.jsx
+const ServiceIcon = ({ name }) => {
+  const paths = {
+    bolt: <g><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M14 5l-6 8h4l-2 6 6-8h-4z" fill="currentColor" stroke="none"/></g>,
+    flame: <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.3-2.5-.7-5 1-7-1 5 4 5 4 9.5a4 4 0 1 1-8 0c0-1 .5-2 1-3"/>,
+    network: <g><path d="m9 17-5-5 5-5M15 17l5-5-5-5"/></g>,
+    droplets: <g><path d="M7.21 15A5 5 0 0 0 12 18a5 5 0 0 0 4.79-3"/><path d="M12 2c-3 4-6 8-6 11a6 6 0 0 0 12 0c0-3-3-7-6-11z"/></g>,
+    sun: <g><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></g>,
+    cpu: <g><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></g>,
+  };
+  return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square">
+      {paths[name]}
+    </svg>
+  );
+};
+
+const Services = ({ lang = "fr" }) => {
+  const content = {
+    fr: {
+      eyebrow: "Ce que nous faisons",
+      headline: "Solutions électriques & techniques intégrées",
+      services: [
+        { icon: "bolt",     title: "Courant fort", body: "Moyenne tension, distribution BT, groupes électrogènes, onduleurs, tableaux TGBT et postes de transformation." },
+        { icon: "flame",    title: "Sécurité incendie", body: "Détection adressable, alarme, CMSI/CDI, réseaux sprinklers et extincteurs automatiques." },
+        { icon: "network",  title: "Courant faible & réseaux", body: "Câblage structuré, commutation, téléphonie, CCTV, contrôle d'accès, anti-intrusion." },
+        { icon: "droplets", title: "Stations de pompage", body: "Alimentation MT, variation de vitesse, armoires de pompage, anti-bélier, télégestion." },
+        { icon: "sun",      title: "Énergie renouvelable", body: "Centrales photovoltaïques et systèmes hybrides pour bâtiments et raccordement réseau." },
+        { icon: "cpu",      title: "GTC / BMS", body: "Gestion technique centralisée pour bâtiments complexes : supervision, monitoring énergétique." },
+      ],
+    },
+    en: {
+      eyebrow: "What we do",
+      headline: "Integrated electrical & technical packages",
+      services: [
+        { icon: "bolt",     title: "Strong-current systems", body: "Medium-voltage, low-voltage distribution, generators, UPS, main switchboards and transformer substations." },
+        { icon: "flame",    title: "Fire safety & protection", body: "Addressable detection, alarm, CMSI/CDI, sprinkler networks and automatic suppression systems." },
+        { icon: "network",  title: "IT & low-current networks", body: "Structured cabling, switches, telephony, CCTV, access control, anti-intrusion systems." },
+        { icon: "droplets", title: "Pumping stations", body: "MV power supply, variable speed drives, pump control panels, anti-water-hammer, telemetry." },
+        { icon: "sun",      title: "Renewable energy", body: "Photovoltaic plants and hybrid systems for buildings and grid connection." },
+        { icon: "cpu",      title: "BMS / GTC", body: "Centralised technical management for complex buildings: supervision and energy monitoring." },
+      ],
+    },
+  };
+
+  const c = content[lang] || content.fr;
+
+  return (
+    <section id="services" style={{padding: "96px 32px", background: "var(--bg-surface)"}}>
+      <div style={{maxWidth: 1280, margin: "0 auto"}}>
+        <div style={{color: "var(--ele-red)", fontSize: 12, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase"}}>{c.eyebrow}</div>
+        <h2 style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 56, lineHeight: 1.05, color: "var(--ele-navy)", textTransform: "uppercase", margin: "12px 0 48px", maxWidth: 800}}>
+          {c.headline}
+        </h2>
+        <div style={{display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24}}>
+          {c.services.map((s, i) => (
+            <article key={i} style={{
+              padding: 28, border: "1px solid var(--border-1)", borderRadius: 8,
+              background: "#fff", transition: "all 200ms cubic-bezier(0.2,0,0,1)"
+            }}>
+              <div style={{color: "var(--ele-navy)", marginBottom: 20}}><ServiceIcon name={s.icon} /></div>
+              <h3 style={{margin: "0 0 8px", fontSize: 20, fontWeight: 700, color: "var(--ele-ink-1)"}}>{s.title}</h3>
+              <p style={{margin: 0, fontSize: 15, lineHeight: 1.55, color: "var(--fg-2)"}}>{s.body}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+window.Services = Services;
+
+  </script>
+
+  <!-- ═══ References.jsx ═══ -->
+  <script type="text/babel">
+// References.jsx
+const projects = [
+  { title: "Aéroport International Djerba-Zarzis", country: "Tunisie", client: "OACA", sector: "Aéroport", specs: ["MT 9×1000 kVA", "BT 2×630 kVA", "GTC"], featured: true, img: "assets/projects/djerba_airport.jpg" },
+  { title: "Hôtel Nour Palace ★★★★★", country: "Tunisie · Mahdia", client: "Société Hôtel Palace · 1 100 lits", sector: "Hôtellerie", specs: ["MT 2×1000 kVA", "CDI 1024", "GTC"], img: "assets/projects/nour_palace.jpg" },
+  { title: "Hôtel LAICO Maya Maya", country: "Congo · Brazzaville", client: "Rénovation et extension", sector: "Hôtellerie", specs: ["MT/BT", "UPS", "Alcatel", "CCTV"], img: "assets/projects/laico_maya.jpg" },
+  { title: "Station de pompage de Billy", country: "Tunisie · Sahel/Sfax", client: "SONEDE · lot n°6", sector: "Eau", specs: ["MT 2×2500 kVA", "3 pompes 550 kW", "Télégestion"], img: "assets/projects/sonede_pumping.jpg" },
+  { title: "SUPCOM — extension électricité", country: "Tunisie · Tunis", client: "Min. des Technologies", sector: "Université", specs: ["UPS", "Réseaux info", "Sonorisation"], img: "assets/projects/supcom.jpg" },
+  { title: "IGH R+8 office building", country: "Congo · Pointe-Noire", client: "Tour de bureaux", sector: "Tertiaire", specs: ["MT/BT", "Sécurité incendie", "CCTV"], img: "assets/projects/igh_pointe_noire.jpg" },
+  { title: "Autoroute Sfax-Gabès", country: "Tunisie", client: "Ministère de l'Équipement", sector: "Autoroute", specs: ["Éclairage", "MT/BT", "Postes péage"], img: "assets/projects/autoroute.jpg" },
+  { title: "Bardo — Chambre des Conseillers", country: "Tunisie · Tunis", client: "Assemblée parlementaire", sector: "Public", specs: ["BT", "CCTV", "Sonorisation"], img: "assets/projects/bardo.jpg" },
+  { title: "Éclairage public Bizerte", country: "Tunisie · Bizerte", client: "Municipalité de Bizerte", sector: "Public", specs: ["Éclairage", "Lot 3"], img: "assets/projects/bizerte.jpg" },
+];
+
+const filterDefs = {
+  fr: ["Tous", "Tunisie", "International", "Aéroport", "Hôtellerie", "Eau", "Public"],
+  en: ["All",  "Tunisia", "International", "Airport",  "Hospitality","Water","Public"],
+};
+
+const Reference = ({ p, lang }) => {
+  const [imgOk, setImgOk] = React.useState(true);
+  const featured = lang === "en" ? "★ Featured project" : "★ Référence phare";
+  return (
+  <article style={{
+    background: "#fff",
+    border: p.featured ? "2px solid var(--ele-navy)" : "1px solid var(--border-1)",
+    borderRadius: p.featured ? 14 : 8,
+    overflow: "hidden",
+    boxShadow: p.featured ? "none" : "var(--shadow-1)",
+    transition: "all 200ms cubic-bezier(0.2,0,0,1)",
+    cursor: "pointer"
+  }}>
+    <div style={{
+      aspectRatio: "16 / 9", position: "relative",
+      background: "linear-gradient(135deg, #2E4F8C 0%, #1A3668 70%)",
+      display: "flex", alignItems: "flex-end", padding: 14,
+      overflow: "hidden"
+    }}>
+      {imgOk && p.img && (
+        <img src={p.img} alt={p.title} onError={() => setImgOk(false)}
+          style={{position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover"}} />
+      )}
+      <div style={{position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(15, 36, 71, 0.7) 0%, rgba(15, 36, 71, 0.1) 50%, transparent 100%)"}}/>
+      <span style={{
+        position: "relative",
+        fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.95)",
+        letterSpacing: "0.08em", textTransform: "uppercase",
+        padding: "4px 10px", border: "1px solid rgba(255,255,255,0.45)", borderRadius: 999,
+        backdropFilter: "blur(4px)", background: "rgba(15,36,71,0.25)"
+      }}>{p.country}</span>
+      {p.featured && (
+        <span style={{
+          position: "absolute", top: 14, left: 14,
+          fontSize: 10, fontWeight: 700, color: "#fff",
+          letterSpacing: "0.18em", textTransform: "uppercase",
+          background: "var(--ele-red)", padding: "4px 8px", borderRadius: 2
+        }}>{featured}</span>
+      )}
+    </div>
+    <div style={{padding: "18px 20px 20px"}}>
+      <div style={{fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ele-red)", marginBottom: 6}}>{p.sector}</div>
+      <h3 style={{margin: "0 0 6px", fontSize: 18, lineHeight: 1.25, color: "var(--ele-ink-1)"}}>{p.title}</h3>
+      <div style={{fontSize: 13, color: "var(--fg-3)", marginBottom: 14}}>{p.client}</div>
+      <div style={{display: "flex", flexWrap: "wrap", gap: 6}}>
+        {p.specs.map((s, i) => (
+          <span key={i} style={{
+            fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600,
+            color: "var(--ele-navy)", background: "var(--ele-mist)",
+            padding: "3px 8px", borderRadius: 4
+          }}>{s}</span>
+        ))}
+      </div>
+    </div>
+  </article>
+  );
+};
+
+const References = ({ lang = "fr" }) => {
+  const labels = filterDefs[lang] || filterDefs.fr;
+  const [filterIdx, setFilterIdx] = React.useState(0);
+
+  const sectorMap = {
+    fr: { "Aéroport": "Aéroport", "Hôtellerie": "Hôtellerie", "Eau": "Eau", "Public": "Public" },
+    en: { "Airport": "Aéroport", "Hospitality": "Hôtellerie", "Water": "Eau", "Public": "Public" },
+  };
+  const sm = sectorMap[lang] || sectorMap.fr;
+  const label = labels[filterIdx];
+
+  const filtered =
+    filterIdx === 0 ? projects :
+    label === "Tunisie" || label === "Tunisia" ? projects.filter(p => p.country.startsWith("Tunisie")) :
+    label === "International" ? projects.filter(p => !p.country.startsWith("Tunisie")) :
+    projects.filter(p => p.sector === (sm[label] || label));
+
+  const eyebrow = lang === "en" ? "Selected references" : "Références sélectionnées";
+  const headline = lang === "en" ? "Trusted on critical infrastructure" : "De confiance sur les infrastructures critiques";
+
+  return (
+    <section id="references" style={{padding: "96px 32px", background: "var(--bg-page)"}}>
+      <div style={{maxWidth: 1280, margin: "0 auto"}}>
+        <div style={{display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 40, flexWrap: "wrap", gap: 24}}>
+          <div>
+            <div style={{color: "var(--ele-red)", fontSize: 12, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase"}}>{eyebrow}</div>
+            <h2 style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 56, lineHeight: 1.05, color: "var(--ele-navy)", textTransform: "uppercase", margin: "12px 0 0"}}>
+              {headline}
+            </h2>
+          </div>
+          <div style={{display: "flex", gap: 6, flexWrap: "wrap"}}>
+            {labels.map((f, i) => (
+              <button key={i} onClick={() => setFilterIdx(i)} style={{
+                padding: "6px 14px", borderRadius: 999,
+                fontSize: 13, fontWeight: 500,
+                background: i === filterIdx ? "var(--ele-navy)" : "transparent",
+                color: i === filterIdx ? "#fff" : "var(--ele-navy)",
+                border: i === filterIdx ? "1px solid var(--ele-navy)" : "1px solid var(--border-2)",
+                cursor: "pointer", fontFamily: "var(--font-sans)"
+              }}>{f}</button>
+            ))}
+          </div>
+        </div>
+        <div style={{display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24}}>
+          {filtered.map((p, i) => <Reference key={i} p={p} lang={lang} />)}
+        </div>
+      </div>
+    </section>
+  );
+};
+window.References = References;
+
+  </script>
+
+  <!-- ═══ CTA.jsx ═══ -->
+  <script type="text/babel">
+// CTA.jsx — quote band with working contact form
+const CTA = ({ email = "inquiry.laadhar@gmail.com", subject = "Demande de devis — site ELE", lang = "fr" }) => {
+  const [submitted, setSubmitted] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  const labels = {
+    fr: {
+      eyebrow: "Travaillons ensemble",
+      headline: "Un projet d'infrastructure ?",
+      lead: "Décrivez-nous votre site, votre cahier des charges, votre échéance — un ingénieur ELE vous répond sous 48 h.",
+      orDirect: "Ou directement",
+      name: "Nom *", company: "Société", emailLbl: "Email *", phone: "Téléphone",
+      projectType: "Type de projet",
+      projectSelect: "Sélectionner…",
+      projectOptions: ["Courant fort (MT/BT)", "Courant faible / Réseaux", "Sécurité incendie", "Pompage / Hydraulique", "Photovoltaïque", "GTC / BMS", "Autre"],
+      message: "Votre message *",
+      placeholder: "Site, échéance, puissance estimée, contraintes particulières…",
+      send: "Envoyer la demande →",
+      sending: "Envoi en cours…",
+      successTitle: "Message reçu",
+      successBody: "Merci. Un ingénieur ELE vous répondra sous 48 h.",
+      sendAnother: "Envoyer une autre demande",
+    },
+    en: {
+      eyebrow: "Let's work together",
+      headline: "An infrastructure project?",
+      lead: "Tell us about your site, your specifications and your deadline — an ELE engineer will reply within 48 hours.",
+      orDirect: "Or reach us directly",
+      name: "Name *", company: "Company", emailLbl: "Email *", phone: "Phone",
+      projectType: "Project type",
+      projectSelect: "Select…",
+      projectOptions: ["Strong-current (MV/LV)", "Low-current / Networks", "Fire safety", "Pumping / Hydraulics", "Photovoltaic", "BMS / GTC", "Other"],
+      message: "Your message *",
+      placeholder: "Site, deadline, estimated power, special constraints…",
+      send: "Send inquiry →",
+      sending: "Sending…",
+      successTitle: "Message received",
+      successBody: "Thank you. An ELE engineer will reply within 48 hours.",
+      sendAnother: "Send another inquiry",
+    },
+  };
+
+  const lbl = labels[lang] || labels.fr;
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    const form = e.target;
+    const data = new FormData(form);
+    const isLocal = window.location.protocol === "file:";
+    if (!isLocal) {
+      try {
+        const res = await fetch(`https://formsubmit.co/ajax/${email}`, {
+          method: "POST",
+          headers: { "Accept": "application/json" },
+          body: data,
+        });
+        if (res.ok) { setSubmitted(true); setSubmitting(false); return; }
+      } catch (_) {}
+    }
+    // Fallback: open mailto
+    const body = `${lbl.name.replace(" *","")}: ${data.get("name")}\nEmail: ${data.get("email")}\n${lbl.phone}: ${data.get("phone")}\n${lbl.company}: ${data.get("company")}\n${lbl.projectType}: ${data.get("project")}\n\n${data.get("message")}`;
+    window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    setSubmitting(false);
+  };
+
+  const inputStyle = {
+    width: "100%", boxSizing: "border-box",
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.18)",
+    borderRadius: 4, padding: "12px 14px",
+    color: "#fff", fontSize: 14, fontFamily: "var(--font-sans)",
+    outline: "none",
+  };
+  const labelStyle = {
+    display: "block",
+    fontSize: 11, fontWeight: 600, letterSpacing: "0.14em",
+    textTransform: "uppercase", color: "rgba(255,255,255,0.6)",
+    marginBottom: 6,
+  };
+
+  return (
+  <section id="contact" style={{
+    position: "relative", overflow: "hidden",
+    background: "var(--ele-navy)", color: "#fff",
+    padding: "80px 32px"
+  }}>
+    <div style={{position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)", backgroundSize: "48px 48px"}}/>
+    <div style={{maxWidth: 1280, margin: "0 auto", position: "relative", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "start"}}>
+      <div>
+        <div style={{color: "var(--ele-red)", fontSize: 12, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 16}}>{lbl.eyebrow}</div>
+        <h2 style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 56, lineHeight: 1.05, textTransform: "uppercase", margin: "0 0 20px"}}>
+          {lbl.headline}
+        </h2>
+        <p style={{fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 22, lineHeight: 1.5, color: "rgba(255,255,255,0.85)", margin: "0 0 32px", maxWidth: 520}}>
+          {lbl.lead}
+        </p>
+        <div style={{borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: 24, fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.7}}>
+          <div style={{fontSize: 11, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ele-red)", marginBottom: 12}}>{lbl.orDirect}</div>
+          ELE — Etablissement Laadhar d'Electricité<br/>
+          10, Rue Zaafrana 2073, Borj Louzir, Ariana, Tunisie<br/>
+          <a href="tel:+21670689320" style={{color: "rgba(255,255,255,0.95)", textDecoration: "none"}}>+216 70 689 320</a>{" · "}
+          <a href={`mailto:${email}`} style={{color: "rgba(255,255,255,0.95)", textDecoration: "none"}}>{email}</a>
+        </div>
+      </div>
+
+      {submitted ? (
+        <div style={{
+          background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.18)",
+          borderRadius: 8, padding: "48px 32px", textAlign: "center"
+        }}>
+          <div style={{fontSize: 48, marginBottom: 12, color: "var(--ele-red)", fontFamily: "var(--font-display)"}}>✓</div>
+          <h3 style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 28, textTransform: "uppercase", margin: "0 0 12px"}}>{lbl.successTitle}</h3>
+          <p style={{fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 18, color: "rgba(255,255,255,0.8)", margin: "0 0 24px"}}>
+            {lbl.successBody}
+          </p>
+          <button onClick={() => setSubmitted(false)} style={{
+            background: "transparent", color: "rgba(255,255,255,0.6)",
+            border: "1px solid rgba(255,255,255,0.2)", padding: "8px 16px",
+            borderRadius: 4, cursor: "pointer", fontSize: 13, fontFamily: "var(--font-sans)"
+          }}>{lbl.sendAnother}</button>
+        </div>
+      ) : (
+        <form onSubmit={onSubmit} style={{
+          background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 8, padding: 28, display: "grid", gap: 16
+        }}>
+          <input type="hidden" name="_subject" value={subject} />
+          <input type="hidden" name="_template" value="table" />
+          <input type="hidden" name="_captcha" value="false" />
+          <input type="text" name="_honey" style={{display: "none"}} />
+
+          <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12}}>
+            <div>
+              <label style={labelStyle}>{lbl.name}</label>
+              <input style={inputStyle} type="text" name="name" required />
+            </div>
+            <div>
+              <label style={labelStyle}>{lbl.company}</label>
+              <input style={inputStyle} type="text" name="company" />
+            </div>
+          </div>
+          <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12}}>
+            <div>
+              <label style={labelStyle}>{lbl.emailLbl}</label>
+              <input style={inputStyle} type="email" name="email" required />
+            </div>
+            <div>
+              <label style={labelStyle}>{lbl.phone}</label>
+              <input style={inputStyle} type="tel" name="phone" />
+            </div>
+          </div>
+          <div>
+            <label style={labelStyle}>{lbl.projectType}</label>
+            <select style={{...inputStyle, appearance: "none"}} name="project" defaultValue="">
+              <option value="" disabled style={{color: "#000"}}>{lbl.projectSelect}</option>
+              {lbl.projectOptions.map((opt, i) => (
+                <option key={i} style={{color: "#000"}}>{opt}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>{lbl.message}</label>
+            <textarea style={{...inputStyle, minHeight: 110, resize: "vertical", fontFamily: "var(--font-sans)"}} name="message" required placeholder={lbl.placeholder} />
+          </div>
+          <button type="submit" disabled={submitting} style={{
+            background: "var(--ele-red)", color: "#fff", border: "none",
+            padding: "14px 24px", borderRadius: 4, fontWeight: 600, fontSize: 15,
+            cursor: submitting ? "wait" : "pointer", fontFamily: "var(--font-sans)",
+            opacity: submitting ? 0.7 : 1, marginTop: 4
+          }}>{submitting ? lbl.sending : lbl.send}</button>
+        </form>
+      )}
+    </div>
+  </section>
+  );
+};
+window.CTA = CTA;
+
+  </script>
+
+  <!-- ═══ Footer.jsx ═══ -->
+  <script type="text/babel">
+// Footer.jsx
+const Footer = ({ lang = "fr" }) => {
+  const content = {
+    fr: {
+      cols: [
+        { title: "Services", links: [
+          { label: "Courant fort", href: "#services" },
+          { label: "Courant faible", href: "#services" },
+          { label: "Sécurité incendie", href: "#services" },
+          { label: "Pompage", href: "#services" },
+          { label: "Photovoltaïque", href: "#services" },
+          { label: "GTC / BMS", href: "#services" },
+        ]},
+        { title: "Entreprise", links: [
+          { label: "Histoire depuis 1978", href: "#company" },
+          { label: "Direction", href: "#company" },
+          { label: "Carrières", href: "mailto:ele.laadhar@yahoo.fr?subject=Carri%C3%A8res" },
+          { label: "Certifications", href: "#company" },
+        ]},
+        { title: "Présence", links: [
+          { label: "Tunisie", href: "#references" },
+          { label: "Congo Brazzaville", href: "#references" },
+          { label: "Pointe-Noire", href: "#references" },
+          { label: "Mauritanie", href: "#references" },
+          { label: "Belgique", href: "#references" },
+        ]},
+      ],
+      legal: "Mentions légales",
+      privacy: "Politique de confidentialité",
+      tagline: "Etablissement Laadhar d'Electricité — Since 1978.",
+    },
+    en: {
+      cols: [
+        { title: "Services", links: [
+          { label: "Strong-current systems", href: "#services" },
+          { label: "Low-current / IT", href: "#services" },
+          { label: "Fire safety", href: "#services" },
+          { label: "Pumping stations", href: "#services" },
+          { label: "Photovoltaic", href: "#services" },
+          { label: "BMS / GTC", href: "#services" },
+        ]},
+        { title: "Company", links: [
+          { label: "History since 1978", href: "#company" },
+          { label: "Management", href: "#company" },
+          { label: "Careers", href: "mailto:ele.laadhar@yahoo.fr?subject=Careers" },
+          { label: "Certifications", href: "#company" },
+        ]},
+        { title: "Presence", links: [
+          { label: "Tunisia", href: "#references" },
+          { label: "Congo Brazzaville", href: "#references" },
+          { label: "Pointe-Noire", href: "#references" },
+          { label: "Mauritania", href: "#references" },
+          { label: "Belgium", href: "#references" },
+        ]},
+      ],
+      legal: "Legal notice",
+      privacy: "Privacy policy",
+      tagline: "Etablissement Laadhar d'Electricité — Since 1978.",
+    },
+  };
+
+  const c = content[lang] || content.fr;
+
+  const handleClick = (e, href) => {
+    if (href.startsWith("#")) {
+      e.preventDefault();
+      const el = document.getElementById(href.slice(1));
+      if (el) window.scrollTo({ top: el.offsetTop - 72, behavior: "smooth" });
+    }
+  };
+
+  return (
+    <footer style={{background: "var(--ele-navy-deep)", color: "#fff"}}>
+      <div style={{maxWidth: 1280, margin: "0 auto", padding: "64px 32px 32px"}}>
+        <div style={{display: "grid", gridTemplateColumns: "1.4fr repeat(3, 1fr)", gap: 48, marginBottom: 48}}>
+          <div>
+            <img
+              src="assets/logo_ele_white.png"
+              alt="ELE"
+              style={{height: 36, marginBottom: 16, display: "block"}}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "assets/logo_ele_transparent.png";
+                e.target.style.filter = "brightness(0) invert(1)";
+              }}
+            />
+            <div style={{fontSize: 13, lineHeight: 1.7, color: "rgba(255,255,255,0.7)"}}>
+              Etablissement Laadhar d'Electricité<br/>
+              10, Rue Zaafrana 2073<br/>
+              Borj Louzir · Ariana · Tunisie<br/>
+              <a href="tel:+21670689320" style={{color: "rgba(255,255,255,0.85)", textDecoration: "none"}}>+216 70 689 320</a><br/>
+              <a href="mailto:ele.laadhar@yahoo.fr" style={{color: "rgba(255,255,255,0.85)", textDecoration: "none"}}>ele.laadhar@yahoo.fr</a>
+            </div>
+          </div>
+          {c.cols.map((col, i) => (
+            <div key={i}>
+              <div style={{fontSize: 11, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ele-red)", marginBottom: 16}}>{col.title}</div>
+              <div style={{display: "flex", flexDirection: "column", gap: 8}}>
+                {col.links.map((l, j) => (
+                  <a key={j} href={l.href} onClick={(e) => handleClick(e, l.href)}
+                    style={{color: "rgba(255,255,255,0.85)", textDecoration: "none", fontSize: 14, cursor: "pointer"}}>{l.label}</a>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16}}>
+          <div style={{fontFamily: "var(--font-serif)", fontStyle: "italic", color: "rgba(255,255,255,0.6)", fontSize: 14}}>
+            {c.tagline}
+          </div>
+          <div style={{display: "flex", gap: 24, fontSize: 12, color: "rgba(255,255,255,0.5)"}}>
+            <a href="#" style={{color: "inherit", textDecoration: "none"}}>{c.legal}</a>
+            <a href="#" style={{color: "inherit", textDecoration: "none"}}>{c.privacy}</a>
+            <span>© 2026 ELE</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+};
+window.Footer = Footer;
+
+  </script>
+
+  <!-- ═══ App entry point ═══ -->
+  <script type="text/babel">
+    const App = () => {
+      const [t, setTweak] = useTweaks(window.__ELE_TWEAK_DEFAULTS);
+
+      const [lang, setLang] = React.useState(() => {
+        try { return localStorage.getItem("ele_lang") || "fr"; } catch (e) { return "fr"; }
+      });
+
+      const handleLangChange = (newLang) => {
+        setLang(newLang);
+        try { localStorage.setItem("ele_lang", newLang); } catch (e) {}
+        document.documentElement.lang = newLang;
+      };
+
+      React.useEffect(() => {
+        if (t.primaryRed) document.documentElement.style.setProperty("--ele-red", t.primaryRed);
+        if (t.navy)       document.documentElement.style.setProperty("--ele-navy", t.navy);
+      }, [t.primaryRed, t.navy]);
+
+      return (
+        <>
+          <Header lang={lang} onLangChange={handleLangChange} />
+          <section id="company-hero">
+            <Hero
+              lang={lang}
+              eyebrow={t.heroEyebrow}
+              headline={t.heroHeadline}
+              accent={t.heroAccent}
+              lead={t.heroLead}
+            />
+          </section>
+          {t.showStats && <Stats lang={lang} />}
+          {t.showAbout && <About lang={lang} />}
+          <Services lang={lang} />
+          <References lang={lang} />
+          <CTA lang={lang} email={t.ctaEmail} subject={t.ctaSubject} />
+          <Footer lang={lang} />
+
+          <TweaksPanel title="ELE Tweaks">
+            <TweakSection label="Brand">
+              <TweakColor label="Primary red" value={t.primaryRed} onChange={(v) => setTweak("primaryRed", v)}
+                options={["#E30613", "#C8102E", "#B31B1B", "#8C1B1B"]} />
+              <TweakColor label="Navy" value={t.navy} onChange={(v) => setTweak("navy", v)}
+                options={["#152849", "#0F2447", "#1A3668", "#0B1C3A"]} />
+            </TweakSection>
+            <TweakSection label="Hero">
+              <TweakText label="Eyebrow" value={t.heroEyebrow} onChange={(v) => setTweak("heroEyebrow", v)} />
+              <TweakText label="Headline" value={t.heroHeadline} onChange={(v) => setTweak("heroHeadline", v)} />
+              <TweakText label="Accent" value={t.heroAccent} onChange={(v) => setTweak("heroAccent", v)} />
+              <TweakText label="Lead" value={t.heroLead} onChange={(v) => setTweak("heroLead", v)} multiline />
+            </TweakSection>
+            <TweakSection label="Sections">
+              <TweakToggle label="Show stats band" value={t.showStats} onChange={(v) => setTweak("showStats", v)} />
+              <TweakToggle label="Show about / heritage" value={t.showAbout} onChange={(v) => setTweak("showAbout", v)} />
+            </TweakSection>
+            <TweakSection label="Contact form">
+              <TweakText label="Inquiry email" value={t.ctaEmail} onChange={(v) => setTweak("ctaEmail", v)} />
+              <TweakText label="Email subject" value={t.ctaSubject} onChange={(v) => setTweak("ctaSubject", v)} />
+            </TweakSection>
+          </TweaksPanel>
+        </>
+      );
+    };
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
