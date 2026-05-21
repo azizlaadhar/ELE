@@ -2,11 +2,72 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=1280" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ELE — Etablissement Laadhar d’Electricité</title>
   <link rel="stylesheet" href="colors_and_type.css" />
   <link rel="icon" type="image/svg+xml" href="assets/icon_bolt.svg" />
-  <style> body { margin: 0; } </style>
+  <style>
+    body { margin: 0; }
+    *, *::before, *::after { box-sizing: border-box; }
+    img { max-width: 100%; height: auto; }
+
+    /* Smooth anchor scrolling, but respect users who disable motion */
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+
+    /* ─── Responsive scaffolding ─────────────────────────────────────────── */
+    .ele-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .ele-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; }
+    .ele-grid-split { display: grid; grid-template-columns: 1fr 1.4fr; gap: 64px; align-items: start; }
+    .ele-grid-2-eq  { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; }
+
+    @media (max-width: 1024px) {
+      .ele-grid-3, .ele-grid-4 { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+      .ele-grid-split, .ele-grid-2-eq { grid-template-columns: 1fr; gap: 32px; }
+    }
+    @media (max-width: 640px) {
+      .ele-grid-3, .ele-grid-4 { grid-template-columns: 1fr; }
+      .ele-mobile-stack { flex-direction: column !important; align-items: stretch !important; }
+      .ele-mobile-stack > * { width: 100% !important; }
+    }
+
+    /* ─── Reference card hover ───────────────────────────────────────────── */
+    .ele-ref-card { transition: transform 220ms cubic-bezier(0.2,0,0,1), box-shadow 220ms; }
+    .ele-ref-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(15, 36, 71, 0.14); }
+    .ele-ref-card:hover .ele-ref-img { transform: scale(1.04); }
+    .ele-ref-img { transition: transform 500ms cubic-bezier(0.2,0,0,1); }
+
+    /* Service card hover */
+    .ele-svc-card { transition: transform 200ms, box-shadow 200ms, border-color 200ms; }
+    .ele-svc-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15, 36, 71, 0.10); border-color: var(--ele-red) !important; }
+
+    /* Header link hover */
+    .ele-nav-link:hover { color: var(--ele-navy) !important; }
+
+    /* Form field focus */
+    .ele-input:focus { border-color: var(--ele-red) !important; background: rgba(255,255,255,0.10) !important; }
+    .ele-input.ele-error { border-color: var(--ele-red) !important; background: rgba(227, 6, 19, 0.08) !important; }
+
+    /* Mobile header tweaks */
+    @media (max-width: 880px) {
+      .ele-nav-desktop { display: none !important; }
+      .ele-nav-mobile { display: flex !important; }
+      .ele-hero-pad { padding: 64px 20px 80px !important; }
+      .ele-section-pad { padding: 64px 20px !important; }
+      .ele-cta-hide-mobile { display: none !important; }
+    }
+    .ele-nav-mobile { display: none; }
+
+    @media (max-width: 1024px) {
+      .ele-grid-footer { grid-template-columns: 1fr 1fr !important; gap: 32px !important; }
+    }
+    @media (max-width: 640px) {
+      .ele-grid-footer { grid-template-columns: 1fr !important; }
+    }
+  </style>
   <template id="__bundler_thumbnail">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
       <rect width="200" height="200" fill="#0F2447"/>
@@ -25,6 +86,7 @@
       "heroEyebrow": "Since 1978 \u00b7 Tunisia \u2192 Africa",
       "showStats": true,
       "showAbout": true,
+      "showCoverage": true,
       "ctaSubject": "Demande de devis \u2014 site ELE",
       "ctaEmail": "inquiry.laadhar@gmail.com"
     }/*EDITMODE-END*/;
@@ -629,18 +691,21 @@ const TRANSLATIONS = {
 };
 
 const Header = ({ lang = "fr", onLangChange }) => {
-  const [active, setActive] = React.useState(0);
+  const [open, setOpen] = React.useState(false);  // mobile menu
   const navRef = React.useRef(null);
   const itemRefs = React.useRef([]);
   const [indicator, setIndicator] = React.useState({ left: 0, width: 0, ready: false });
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS.fr;
-  const targets = ["company", "services", "references", "references", "contact"];
+  const targets = ["company", "services", "references", "international", "contact"];
   const links = t.nav.map((label, i) => ({ label, target: targets[i] }));
+  const activeId = useScrollSpy(targets, 100);
+  const active = Math.max(0, targets.indexOf(activeId));
 
   const scrollTo = (id) => {
     const el = document.getElementById(id);
     if (el) window.scrollTo({ top: el.offsetTop - 72, behavior: "smooth" });
+    setOpen(false);
   };
 
   const measureIndicator = () => {
@@ -656,9 +721,7 @@ const Header = ({ lang = "fr", onLangChange }) => {
     });
   };
 
-  React.useLayoutEffect(() => {
-    measureIndicator();
-  }, [active, lang]);
+  React.useLayoutEffect(() => { measureIndicator(); }, [active, lang]);
 
   React.useEffect(() => {
     window.addEventListener("resize", measureIndicator);
@@ -675,25 +738,21 @@ const Header = ({ lang = "fr", onLangChange }) => {
       borderBottom: "1px solid var(--border-1)",
     }}>
       <div style={{
-        maxWidth: 1280, margin: "0 auto", padding: "0 32px",
-        height: 72, display: "flex", alignItems: "center", justifyContent: "space-between"
+        maxWidth: 1280, margin: "0 auto", padding: "0 20px",
+        height: 72, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16
       }}>
         <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({top: 0, behavior: "smooth"}); }}
-          style={{display: "flex", alignItems: "center", gap: 10, textDecoration: "none"}}>
+          style={{display: "flex", alignItems: "center", gap: 10, textDecoration: "none", flexShrink: 0}}>
           <img src="assets/logo_ele.png" alt="ELE"
             style={{height: 36}}
             onError={(e) => { e.target.src = "assets/logo_ele_transparent.png"; }} />
         </a>
 
-        <nav ref={navRef} style={{display: "flex", gap: 28, position: "relative", alignItems: "center"}}>
-          {/* Sliding red indicator */}
+        <nav ref={navRef} className="ele-nav-desktop" style={{display: "flex", gap: 28, position: "relative", alignItems: "center"}}>
           {indicator.ready && (
             <span style={{
-              position: "absolute",
-              bottom: -2,
-              left: indicator.left,
-              width: indicator.width,
-              height: 2,
+              position: "absolute", bottom: -2,
+              left: indicator.left, width: indicator.width, height: 2,
               background: "var(--ele-red)",
               transition: "left 280ms cubic-bezier(0.2,0,0,1), width 280ms cubic-bezier(0.2,0,0,1)",
               borderRadius: 1,
@@ -703,9 +762,10 @@ const Header = ({ lang = "fr", onLangChange }) => {
             <a key={i}
               ref={(el) => { itemRefs.current[i] = el; }}
               href={`#${l.target}`}
-              onClick={(e) => { e.preventDefault(); setActive(i); scrollTo(l.target); }}
+              className="ele-nav-link"
+              onClick={(e) => { e.preventDefault(); scrollTo(l.target); }}
               style={{
-                color: active === i ? "var(--ele-navy)" : "var(--ele-ink-1)",
+                color: active === i ? "var(--ele-navy)" : "var(--ele-ink-2)",
                 textDecoration: "none",
                 fontSize: 14, fontWeight: active === i ? 600 : 500,
                 paddingBottom: 4, cursor: "pointer",
@@ -716,7 +776,7 @@ const Header = ({ lang = "fr", onLangChange }) => {
           ))}
         </nav>
 
-        <div style={{display: "flex", gap: 10, alignItems: "center"}}>
+        <div style={{display: "flex", gap: 10, alignItems: "center", flexShrink: 0}}>
           <button onClick={toggleLang} aria-label="Toggle language" style={{
             background: "transparent",
             border: "1px solid var(--border-2)",
@@ -730,13 +790,45 @@ const Header = ({ lang = "fr", onLangChange }) => {
             <span style={{margin: "0 4px", color: "var(--border-2)"}}>·</span>
             <span style={{color: lang === "en" ? "var(--ele-navy)" : "var(--fg-3)"}}>EN</span>
           </button>
-          <button onClick={() => scrollTo("contact")} style={{
+          <button onClick={() => scrollTo("contact")} className="ele-cta-hide-mobile" style={{
             background: "var(--ele-red)", color: "#fff", border: "none",
             padding: "10px 18px", borderRadius: 4, fontWeight: 600, fontSize: 13,
             cursor: "pointer", fontFamily: "var(--font-sans)"
           }}>{t.cta}</button>
+          {/* Hamburger toggle, only visible on mobile via .ele-nav-mobile */}
+          <button onClick={() => setOpen(o => !o)} aria-label="Menu" className="ele-nav-mobile" style={{
+            background: "transparent", border: "1px solid var(--border-2)", borderRadius: 4,
+            width: 36, height: 36, padding: 0, cursor: "pointer",
+            display: "none", alignItems: "center", justifyContent: "center",
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              {open ? <path d="M18 6L6 18M6 6l12 12"/> : <g><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></g>}
+            </svg>
+          </button>
         </div>
       </div>
+
+      {/* Mobile dropdown panel */}
+      {open && (
+        <div className="ele-nav-mobile" style={{
+          flexDirection: "column", padding: "8px 20px 16px", gap: 4,
+          borderTop: "1px solid var(--border-1)", background: "#fff",
+        }}>
+          {links.map((l, i) => (
+            <a key={i} href={`#${l.target}`} onClick={(e) => { e.preventDefault(); scrollTo(l.target); }}
+              style={{
+                display: "block", padding: "10px 4px",
+                color: active === i ? "var(--ele-navy)" : "var(--ele-ink-2)",
+                fontWeight: active === i ? 600 : 500, fontSize: 15,
+                textDecoration: "none",
+                borderLeft: active === i ? "3px solid var(--ele-red)" : "3px solid transparent",
+                paddingLeft: 12,
+              }}>
+              {l.label}
+            </a>
+          ))}
+        </div>
+      )}
     </header>
   );
 };
@@ -764,7 +856,7 @@ const Hero = ({ eyebrow, headline, accent, lead, lang = "fr" }) => {
     background: "linear-gradient(135deg, #0F2447 0%, #1A3668 60%, #2E4F8C 100%)",
     color: "#fff",
     padding: "96px 32px 120px"
-  }}>
+  }} className="ele-hero-pad">
     <div style={{
       position: "absolute", inset: 0,
       backgroundImage: "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)",
@@ -841,11 +933,13 @@ const Stats = ({ lang = "fr" }) => {
   };
   const data = items[lang] || items.fr;
   return (
-    <section style={{background: "var(--ele-paper)", padding: "48px 32px", borderTop: "1px solid var(--border-1)", borderBottom: "1px solid var(--border-1)"}}>
-      <div style={{maxWidth: 1280, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 32}}>
+    <section style={{background: "var(--ele-paper)", padding: "48px 32px", borderTop: "1px solid var(--border-1)", borderBottom: "1px solid var(--border-1)"}} className="ele-section-pad">
+      <div style={{maxWidth: 1280, margin: "0 auto"}} className="ele-grid-4">
         {data.map((it, i) => (
           <div key={i} style={{borderLeft: i === 0 ? "none" : "1px solid var(--border-1)", paddingLeft: i === 0 ? 0 : 24}}>
-            <div style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 56, lineHeight: 1, color: "var(--ele-navy)"}}>{it.n}</div>
+            <div style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 56, lineHeight: 1, color: "var(--ele-navy)"}}>
+              <AnimatedCounter value={it.n} />
+            </div>
             <div style={{marginTop: 8, fontSize: 13, color: "var(--fg-3)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600}}>{it.l}</div>
           </div>
         ))}
@@ -919,11 +1013,11 @@ const About = ({ lang = "fr" }) => {
   const c = content[lang] || content.fr;
 
   return (
-    <section id="company" style={{padding: "96px 32px", background: "var(--ele-paper)"}}>
+    <section id="company" style={{padding: "96px 32px", background: "var(--ele-paper)"}} className="ele-section-pad">
       <div style={{maxWidth: 1280, margin: "0 auto"}}>
 
         {/* Header + intro */}
-        <div style={{display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 64, marginBottom: 72, alignItems: "start"}}>
+        <div className="ele-grid-split" style={{marginBottom: 72}}>
           <div>
             <div style={{color: "var(--ele-red)", fontSize: 12, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 16}}>{c.eyebrow}</div>
             <h2 style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 56, lineHeight: 1.05, color: "var(--ele-navy)", textTransform: "uppercase", margin: "0 0 16px"}}>
@@ -942,7 +1036,7 @@ const About = ({ lang = "fr" }) => {
         {/* Three pillars */}
         <div style={{marginBottom: 72}}>
           <div style={{fontSize: 11, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ele-red)", marginBottom: 24}}>{c.pillarsTitle}</div>
-          <div style={{display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24}}>
+          <div className="ele-grid-3">
             {c.pillars.map((p, i) => (
               <div key={i} style={{
                 padding: "28px 28px 28px",
@@ -1037,21 +1131,34 @@ const Services = ({ lang = "fr" }) => {
   const c = content[lang] || content.fr;
 
   return (
-    <section id="services" style={{padding: "96px 32px", background: "var(--bg-surface)"}}>
+    <section id="services" style={{padding: "96px 32px", background: "var(--bg-surface)"}} className="ele-section-pad">
       <div style={{maxWidth: 1280, margin: "0 auto"}}>
         <div style={{color: "var(--ele-red)", fontSize: 12, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase"}}>{c.eyebrow}</div>
-        <h2 style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 56, lineHeight: 1.05, color: "var(--ele-navy)", textTransform: "uppercase", margin: "12px 0 48px", maxWidth: 800}}>
+        <h2 style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "clamp(36px, 4.4vw, 56px)", lineHeight: 1.05, color: "var(--ele-navy)", textTransform: "uppercase", margin: "12px 0 48px", maxWidth: 800}}>
           {c.headline}
         </h2>
-        <div style={{display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24}}>
+        <div className="ele-grid-3">
           {c.services.map((s, i) => (
-            <article key={i} style={{
-              padding: 28, border: "1px solid var(--border-1)", borderRadius: 8,
-              background: "#fff", transition: "all 200ms cubic-bezier(0.2,0,0,1)"
-            }}>
+            <article key={i}
+              role="button" tabIndex={0}
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent("ele:preselectService", { detail: { title: s.title } }));
+                const el = document.getElementById("contact");
+                if (el) window.scrollTo({ top: el.offsetTop - 72, behavior: "smooth" });
+              }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") e.currentTarget.click(); }}
+              className="ele-svc-card"
+              style={{
+                padding: 28, border: "1px solid var(--border-1)", borderRadius: 8,
+                background: "#fff", cursor: "pointer",
+                display: "flex", flexDirection: "column", height: "100%",
+              }}>
               <div style={{color: "var(--ele-navy)", marginBottom: 20}}><ServiceIcon name={s.icon} /></div>
               <h3 style={{margin: "0 0 8px", fontSize: 20, fontWeight: 700, color: "var(--ele-ink-1)"}}>{s.title}</h3>
-              <p style={{margin: 0, fontSize: 15, lineHeight: 1.55, color: "var(--fg-2)"}}>{s.body}</p>
+              <p style={{margin: "0 0 16px", fontSize: 15, lineHeight: 1.55, color: "var(--fg-2)"}}>{s.body}</p>
+              <div style={{marginTop: "auto", fontSize: 12, fontWeight: 600, color: "var(--ele-red)", letterSpacing: "0.04em"}}>
+                {lang === "en" ? "Inquire about this →" : "Demander un devis →"}
+              </div>
             </article>
           ))}
         </div>
@@ -1067,127 +1174,461 @@ window.Services = Services;
   <script type="text/babel">
 // References.jsx
 const projects = [
-  { title: "Aéroport International Djerba-Zarzis", country: "Tunisie", client: "OACA", sector: "Aéroport", specs: ["MT 9×1000 kVA", "BT 2×630 kVA", "GTC"], featured: true, img: "assets/projects/djerba_airport.jpg" },
-  { title: "Hôtel Nour Palace ★★★★★", country: "Tunisie · Mahdia", client: "Société Hôtel Palace · 1 100 lits", sector: "Hôtellerie", specs: ["MT 2×1000 kVA", "CDI 1024", "GTC"], img: "assets/projects/nour_palace.jpg" },
-  { title: "Hôtel LAICO Maya Maya", country: "Congo · Brazzaville", client: "Rénovation et extension", sector: "Hôtellerie", specs: ["MT/BT", "UPS", "Alcatel", "CCTV"], img: "assets/projects/laico_maya.jpg" },
-  { title: "Station de pompage de Billy", country: "Tunisie · Sahel/Sfax", client: "SONEDE · lot n°6", sector: "Eau", specs: ["MT 2×2500 kVA", "3 pompes 550 kW", "Télégestion"], img: "assets/projects/sonede_pumping.jpg" },
-  { title: "SUPCOM — extension électricité", country: "Tunisie · Tunis", client: "Min. des Technologies", sector: "Université", specs: ["UPS", "Réseaux info", "Sonorisation"], img: "assets/projects/supcom.jpg" },
-  { title: "IGH R+8 office building", country: "Congo · Pointe-Noire", client: "Tour de bureaux", sector: "Tertiaire", specs: ["MT/BT", "Sécurité incendie", "CCTV"], img: "assets/projects/igh_pointe_noire.jpg" },
+  { title: "Aéroport International Djerba-Zarzis", country: "Tunisie", client: "OACA", sector: "Aéroport", specs: ["MT 9×1000+2×800 kVA", "BT 2×630 kVA", "GTC"], amount: "5 425 036 DT", featured: true, img: "assets/projects/djerba_airport.jpg" },
+  { title: "Hôtel Nour Palace ★★★★★", country: "Tunisie · Mahdia", client: "Société Hôtel Palace · 1 100 lits", sector: "Hôtellerie", specs: ["MT 2×1000 kVA", "CDI 1024", "GTC"], amount: "2 276 393 DT", img: "assets/projects/nour_palace.jpg" },
+  { title: "Station de pompage de Billy", country: "Tunisie · Sahel/Sfax", client: "SONEDE · lot n°6", sector: "Eau", specs: ["MT 2×2500 kVA", "3 pompes 550 kW", "Télégestion"], amount: "2 732 056 DT", img: "assets/projects/sonede_pumping.jpg" },
+  { title: "Hôtel LAICO Maya Maya", country: "Congo · Brazzaville", client: "CERI Tunisie", sector: "Hôtellerie", specs: ["MT 2×1000 kVA", "UPS 2×10 kVA", "Alcatel", "CCTV"], amount: "2 224 251 €", img: "assets/projects/laico_maya.jpg" },
+  { title: "Immeuble ELBO R+9 type HQU", country: "Congo · Brazzaville", client: "BEN'TSI IMMO", sector: "Tertiaire", specs: ["MT 1250 kVA", "2×630 kVA parallèle", "PV", "GTC"], amount: "2 250 784 €", img: "assets/projects/elbo_brazzaville.jpg" },
+  { title: "Aéroport International Sfax-Thyna", country: "Tunisie · Sfax", client: "OACA", sector: "Aéroport", specs: ["MT 2×800 kVA", "BT 630 kVA", "GTC"], amount: "2 236 253 DT", img: "assets/projects/sfax_thyna.jpg" },
+  { title: "SUPCOM — extension électricité", country: "Tunisie · Tunis", client: "Min. des Technologies", sector: "Université", specs: ["MT 2×630 kVA", "UPS 160+2×100+2×40", "Sonorisation"], amount: "1 605 668 DT", img: "assets/projects/supcom.jpg" },
+  { title: "Chambre des Conseillers — Bardo", country: "Tunisie · Tunis", client: "SOMATRA", sector: "Public", specs: ["MT 2×630 kVA", "BT 800 kVA", "CDI", "Téléphonie"], amount: "1 488 053 DT", img: "assets/projects/bardo.jpg" },
+  { title: "Immeuble IGH R+8 bureaux", country: "Congo · Pointe-Noire", client: "Consul honoraire du Bénin · SCI Lincoln Immoco", sector: "Tertiaire", specs: ["MT 800 kVA", "3×400 kVA", "CDI", "CCTV"], amount: "1 322 457 €", img: "assets/projects/igh_pointe_noire.jpg" },
+  { title: "Maternité & Néonatologie Monastir", country: "Tunisie · Monastir", client: "Ministère de la Santé Publique", sector: "Santé", specs: ["MT 2×630 kVA", "BT 500 kVA", "Appel malade", "GTC"], amount: "885 547 DT", img: "assets/projects/maternite_monastir.jpg" },
+  { title: "TOPNET & HOTLINE — siège", country: "Tunisie · Tunis", client: "TOPNET", sector: "Tertiaire", specs: ["MT 1000 kVA", "BT 400 kVA", "CDI"], amount: "816 321 DT", img: "assets/projects/topnet.jpg" },
   { title: "Autoroute Sfax-Gabès", country: "Tunisie", client: "Ministère de l'Équipement", sector: "Autoroute", specs: ["Éclairage", "MT/BT", "Postes péage"], img: "assets/projects/autoroute.jpg" },
-  { title: "Bardo — Chambre des Conseillers", country: "Tunisie · Tunis", client: "Assemblée parlementaire", sector: "Public", specs: ["BT", "CCTV", "Sonorisation"], img: "assets/projects/bardo.jpg" },
   { title: "Éclairage public Bizerte", country: "Tunisie · Bizerte", client: "Municipalité de Bizerte", sector: "Public", specs: ["Éclairage", "Lot 3"], img: "assets/projects/bizerte.jpg" },
 ];
 
 const filterDefs = {
-  fr: ["Tous", "Tunisie", "International", "Aéroport", "Hôtellerie", "Eau", "Public"],
-  en: ["All",  "Tunisia", "International", "Airport",  "Hospitality","Water","Public"],
+  fr: ["Tous", "Tunisie", "International", "Aéroport", "Hôtellerie", "Tertiaire", "Eau", "Santé", "Public"],
+  en: ["All",  "Tunisia", "International", "Airport",  "Hospitality","Office",     "Water","Health","Public"],
 };
 
-const Reference = ({ p, lang }) => {
+const Reference = ({ p, lang, onClick, onInquire }) => {
   const [imgOk, setImgOk] = React.useState(true);
+  const [hover, setHover] = React.useState(false);
+  const [slide, setSlide] = React.useState(0);
+  const wrapRef = React.useRef(null);
+  const [popDirection, setPopDirection] = React.useState("down");
+
+  const key = (window.projectKey && window.projectKey(p)) || null;
+  const long = key && window.PROJECT_LONG ? window.PROJECT_LONG[key] : null;
+  const scope = long ? (lang === "en" ? long.scopeEn : long.scopeFr) : null;
+  const year  = long ? (lang === "en" ? long.yearsEn : long.yearsFr) : null;
+  const tags  = long ? long.tags : p.specs;
+
+  // ── 3 simulated "slides": photo + photo-zoom + spec datasheet ──
+  const slides = [
+    { kind: "photo", pos: "center", scale: 1.05 },
+    { kind: "photo", pos: "right",  scale: 1.20 },
+    { kind: "specs" },
+  ];
+
+  // Auto-advance while hovered. Reset to 0 on leave.
+  React.useEffect(() => {
+    if (!hover) { setSlide(0); return; }
+    const t = setInterval(() => setSlide(s => (s + 1) % slides.length), 2400);
+    return () => clearInterval(t);
+  }, [hover]);
+
+  // Decide if popover should expand up or down based on viewport position
+  React.useEffect(() => {
+    if (!hover || !wrapRef.current) return;
+    const r = wrapRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - r.bottom;
+    setPopDirection(spaceBelow < 240 ? "up" : "down");
+  }, [hover]);
+
   const featured = lang === "en" ? "★ Featured project" : "★ Référence phare";
+  const lblYear     = lang === "en" ? "Year"             : "Année";
+  const lblSector   = lang === "en" ? "Sector"           : "Secteur";
+  const lblScope    = lang === "en" ? "Scope"            : "Périmètre";
+  const lblViewFull = lang === "en" ? "View full project →" : "Voir le projet en détail →";
+  const lblInquire  = lang === "en" ? "Inquire"          : "Demander un devis";
+
   return (
-  <article style={{
-    background: "#fff",
-    border: p.featured ? "2px solid var(--ele-navy)" : "1px solid var(--border-1)",
-    borderRadius: p.featured ? 14 : 8,
-    overflow: "hidden",
-    boxShadow: p.featured ? "none" : "var(--shadow-1)",
-    transition: "all 200ms cubic-bezier(0.2,0,0,1)",
-    cursor: "pointer"
-  }}>
-    <div style={{
-      aspectRatio: "16 / 9", position: "relative",
-      background: "linear-gradient(135deg, #2E4F8C 0%, #1A3668 70%)",
-      display: "flex", alignItems: "flex-end", padding: 14,
-      overflow: "hidden"
-    }}>
-      {imgOk && p.img && (
-        <img src={p.img} alt={p.title} onError={() => setImgOk(false)}
-          style={{position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover"}} />
-      )}
-      <div style={{position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(15, 36, 71, 0.7) 0%, rgba(15, 36, 71, 0.1) 50%, transparent 100%)"}}/>
-      <span style={{
-        position: "relative",
-        fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.95)",
-        letterSpacing: "0.08em", textTransform: "uppercase",
-        padding: "4px 10px", border: "1px solid rgba(255,255,255,0.45)", borderRadius: 999,
-        backdropFilter: "blur(4px)", background: "rgba(15,36,71,0.25)"
-      }}>{p.country}</span>
-      {p.featured && (
-        <span style={{
-          position: "absolute", top: 14, left: 14,
-          fontSize: 10, fontWeight: 700, color: "#fff",
-          letterSpacing: "0.18em", textTransform: "uppercase",
-          background: "var(--ele-red)", padding: "4px 8px", borderRadius: 2
-        }}>{featured}</span>
-      )}
-    </div>
-    <div style={{padding: "18px 20px 20px"}}>
-      <div style={{fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ele-red)", marginBottom: 6}}>{p.sector}</div>
-      <h3 style={{margin: "0 0 6px", fontSize: 18, lineHeight: 1.25, color: "var(--ele-ink-1)"}}>{p.title}</h3>
-      <div style={{fontSize: 13, color: "var(--fg-3)", marginBottom: 14}}>{p.client}</div>
-      <div style={{display: "flex", flexWrap: "wrap", gap: 6}}>
-        {p.specs.map((s, i) => (
-          <span key={i} style={{
-            fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600,
-            color: "var(--ele-navy)", background: "var(--ele-mist)",
-            padding: "3px 8px", borderRadius: 4
-          }}>{s}</span>
-        ))}
+    <div ref={wrapRef}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{position: "relative", zIndex: hover ? 20 : 1}}>
+
+      {/* ─── Base card (always visible) ──────────────────────────────── */}
+      <article
+        onClick={onClick} role="button" tabIndex={0}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick && onClick(); } }}
+        className="ele-ref-card"
+        style={{
+          background: "#fff",
+          border: p.featured ? "2px solid var(--ele-navy)" : "1px solid var(--border-1)",
+          borderRadius: p.featured ? 14 : 8,
+          overflow: "hidden",
+          boxShadow: p.featured ? "none" : "var(--shadow-1)",
+          cursor: "pointer",
+          display: "flex", flexDirection: "column",
+          opacity: hover ? 0 : 1,
+          transition: "opacity 180ms",
+        }}>
+        <div style={{
+          aspectRatio: "16 / 9", position: "relative",
+          background: "linear-gradient(135deg, #2E4F8C 0%, #1A3668 70%)",
+          display: "flex", alignItems: "flex-end", padding: 14,
+          overflow: "hidden"
+        }}>
+          {imgOk && p.img && (
+            <img src={p.img} alt={p.title} loading="lazy" onError={() => setImgOk(false)}
+              className="ele-ref-img"
+              style={{position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover"}} />
+          )}
+          <div style={{position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(15, 36, 71, 0.7) 0%, rgba(15, 36, 71, 0.1) 50%, transparent 100%)"}}/>
+          <span style={{
+            position: "relative",
+            fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.95)",
+            letterSpacing: "0.08em", textTransform: "uppercase",
+            padding: "4px 10px", border: "1px solid rgba(255,255,255,0.45)", borderRadius: 999,
+            backdropFilter: "blur(4px)", background: "rgba(15,36,71,0.25)"
+          }}>{p.country}</span>
+          {p.featured && (
+            <span style={{
+              position: "absolute", top: 14, left: 14,
+              fontSize: 10, fontWeight: 700, color: "#fff",
+              letterSpacing: "0.18em", textTransform: "uppercase",
+              background: "var(--ele-red)", padding: "4px 8px", borderRadius: 2
+            }}>{featured}</span>
+          )}
+        </div>
+        <div style={{padding: "18px 20px 20px", display: "flex", flexDirection: "column", flex: 1}}>
+          <div style={{fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ele-red)", marginBottom: 6}}>{p.sector}</div>
+          <h3 style={{margin: "0 0 6px", fontSize: 18, lineHeight: 1.25, color: "var(--ele-ink-1)"}}>{p.title}</h3>
+          <div style={{fontSize: 13, color: "var(--fg-3)", marginBottom: 14}}>{p.client}</div>
+          <div style={{display: "flex", flexWrap: "wrap", gap: 6, marginTop: "auto"}}>
+            {p.specs.map((s, i) => (
+              <span key={i} style={{
+                fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600,
+                color: "var(--ele-navy)", background: "var(--ele-mist)",
+                padding: "3px 8px", borderRadius: 4
+              }}>{s}</span>
+            ))}
+          </div>
+        </div>
+      </article>
+
+      {/* ─── Hover popover (rich preview) ────────────────────────────── */}
+      <div
+        aria-hidden={!hover}
+        style={{
+          position: "absolute",
+          left: -8, right: -8,
+          [popDirection === "up" ? "bottom" : "top"]: -8,
+          background: "#fff",
+          borderRadius: 14,
+          boxShadow: "0 30px 70px rgba(15, 36, 71, 0.35), 0 0 0 1px rgba(15, 36, 71, 0.08)",
+          overflow: "hidden",
+          pointerEvents: hover ? "auto" : "none",
+          opacity: hover ? 1 : 0,
+          transform: hover ? "scale(1)" : "scale(0.96)",
+          transformOrigin: popDirection === "up" ? "bottom center" : "top center",
+          transition: "opacity 220ms cubic-bezier(0.2,0,0,1), transform 260ms cubic-bezier(0.2,0,0,1)",
+        }}>
+
+        {/* Slider */}
+        <div style={{
+          position: "relative", aspectRatio: "16 / 9",
+          background: "linear-gradient(135deg, #2E4F8C 0%, #1A3668 70%)",
+          overflow: "hidden",
+        }}>
+          {slides.map((s, i) => (
+            <div key={i} style={{
+              position: "absolute", inset: 0,
+              opacity: slide === i ? 1 : 0,
+              transition: "opacity 500ms cubic-bezier(0.2,0,0,1)",
+            }}>
+              {s.kind === "photo" && imgOk && p.img && (
+                <img src={p.img} alt={p.title}
+                  style={{
+                    width: "100%", height: "100%", objectFit: "cover",
+                    objectPosition: s.pos === "right" ? "right center" : "center",
+                    transform: `scale(${s.scale})`,
+                    transition: "transform 4000ms linear",
+                  }}/>
+              )}
+              {s.kind === "specs" && (
+                <div style={{
+                  position: "absolute", inset: 0,
+                  background: "linear-gradient(135deg, #0F2447 0%, #1A3668 100%)",
+                  padding: "20px 22px",
+                  display: "flex", flexDirection: "column",
+                  color: "#fff",
+                }}>
+                  {/* Background grid */}
+                  <div style={{
+                    position: "absolute", inset: 0,
+                    backgroundImage: "linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)",
+                    backgroundSize: "24px 24px", pointerEvents: "none",
+                  }}/>
+                  <div style={{position: "relative", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.2em", color: "rgba(255,255,255,0.55)"}}>
+                    {lblScope.toUpperCase()} · DATASHEET
+                  </div>
+                  <div style={{position: "relative", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 14px", marginTop: 10}}>
+                    {tags.slice(0, 6).map((t, j) => (
+                      <div key={j} style={{
+                        fontFamily: "var(--font-mono)", fontSize: 11,
+                        color: "rgba(255,255,255,0.92)",
+                        display: "flex", alignItems: "center", gap: 8,
+                      }}>
+                        <span style={{width: 6, height: 6, background: "var(--ele-red)", flexShrink: 0}}/>
+                        <span style={{overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}>{t}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Gradient overlay for legibility */}
+          <div style={{
+            position: "absolute", inset: 0, pointerEvents: "none",
+            background: "linear-gradient(to top, rgba(15, 36, 71, 0.7) 0%, rgba(15, 36, 71, 0.05) 45%, transparent 100%)",
+          }}/>
+
+          {/* Country chip */}
+          <span style={{
+            position: "absolute", left: 14, top: 14,
+            fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.95)",
+            letterSpacing: "0.12em", textTransform: "uppercase",
+            padding: "4px 10px", border: "1px solid rgba(255,255,255,0.45)", borderRadius: 999,
+            background: "rgba(15,36,71,0.35)",
+            backdropFilter: "blur(4px)",
+          }}>{p.country}</span>
+
+          {/* Year badge (top right) */}
+          {year && (
+            <span style={{
+              position: "absolute", right: 14, top: 14,
+              fontFamily: "var(--font-mono)",
+              fontSize: 10, fontWeight: 700, color: "#fff",
+              letterSpacing: "0.16em", textTransform: "uppercase",
+              padding: "4px 8px",
+              background: "var(--ele-red)", borderRadius: 2,
+            }}>{year}</span>
+          )}
+
+          {/* Slider dots */}
+          <div style={{
+            position: "absolute", bottom: 12, left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex", gap: 6, zIndex: 2,
+          }}>
+            {slides.map((_, i) => (
+              <button key={i}
+                onClick={(e) => { e.stopPropagation(); setSlide(i); }}
+                aria-label={`Slide ${i + 1}`}
+                style={{
+                  width: slide === i ? 22 : 8, height: 4, padding: 0,
+                  border: "none", borderRadius: 2,
+                  background: slide === i ? "var(--ele-red)" : "rgba(255,255,255,0.55)",
+                  cursor: "pointer",
+                  transition: "width 220ms cubic-bezier(0.2,0,0,1), background 200ms",
+                }}/>
+            ))}
+          </div>
+        </div>
+
+        {/* Body */}
+        <div style={{padding: "16px 20px 18px"}}>
+          <div style={{display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6, gap: 12}}>
+            <div style={{fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ele-red)"}}>{p.sector}</div>
+            {year && (
+              <div style={{fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-3)", letterSpacing: "0.08em"}}>
+                {lblYear.toUpperCase()} · {year}
+              </div>
+            )}
+          </div>
+          <h3 style={{margin: "0 0 4px", fontSize: 19, lineHeight: 1.2, color: "var(--ele-ink-1)", fontWeight: 700}}>{p.title}</h3>
+          <div style={{fontSize: 13, color: "var(--fg-3)", marginBottom: (p.amount || (long && long.amount)) ? 6 : 12}}>{p.client}</div>
+          {(p.amount || (long && long.amount)) && (
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600,
+              color: "var(--ele-navy)", marginBottom: 12,
+              padding: "3px 8px", border: "1px solid var(--border-1)", borderRadius: 4,
+            }}>
+              <span style={{fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: "var(--fg-3)"}}>
+                {lang === "en" ? "VALUE" : "MONTANT"}
+              </span>
+              <span>{p.amount || long.amount}</span>
+            </div>
+          )}
+
+          {scope && (
+            <p style={{
+              fontFamily: "var(--font-serif)",
+              fontSize: 13, lineHeight: 1.55,
+              color: "var(--fg-2)", margin: "0 0 14px",
+              display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}>{scope}</p>
+          )}
+
+          <div style={{display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 14}}>
+            {tags.slice(0, 4).map((s, i) => (
+              <span key={i} style={{
+                fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600,
+                color: "var(--ele-navy)", background: "var(--ele-mist)",
+                padding: "3px 7px", borderRadius: 3, letterSpacing: "0.02em",
+              }}>{s}</span>
+            ))}
+          </div>
+
+          <div style={{display: "flex", gap: 8}}>
+            <button onClick={(e) => { e.stopPropagation(); onClick && onClick(); }}
+              style={{
+                flex: 1, background: "var(--ele-navy)", color: "#fff",
+                border: "none", borderRadius: 4, padding: "10px 14px",
+                fontSize: 12, fontWeight: 600, fontFamily: "var(--font-sans)",
+                cursor: "pointer", letterSpacing: "0.02em",
+              }}>{lblViewFull}</button>
+            <button onClick={(e) => { e.stopPropagation(); onInquire && onInquire(p); }}
+              aria-label={lblInquire}
+              style={{
+                width: 38, background: "var(--ele-red)", color: "#fff",
+                border: "none", borderRadius: 4, padding: 0,
+                cursor: "pointer", display: "grid", placeItems: "center",
+              }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M14 5l-6 8h4l-2 6 6-8h-4z"/></svg>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  </article>
   );
 };
 
-const References = ({ lang = "fr" }) => {
+const References = ({ lang = "fr", initialFilter = 0, onProjectInquire }) => {
   const labels = filterDefs[lang] || filterDefs.fr;
-  const [filterIdx, setFilterIdx] = React.useState(0);
+  const [filterIdx, setFilterIdx] = React.useState(initialFilter);
+  const [query, setQuery] = React.useState("");
+  const debounced = useDebouncedValue(query, 150);
+  const [modalProject, setModalProject] = React.useState(null);
+
+  // Listen for external filter requests (clicked on coverage map)
+  React.useEffect(() => {
+    const onFilter = (e) => {
+      const country = e.detail?.country;
+      if (!country) return;
+      // Map country to the FR filter index, then translate via labels[idx].
+      const map = lang === "en"
+        ? { "Tunisie": 1, "Congo": 2, "Mauritanie": 2 }
+        : { "Tunisie": 1, "Congo": 2, "Mauritanie": 2 };
+      const idx = map[country];
+      if (idx != null) setFilterIdx(idx);
+      const el = document.getElementById("references");
+      if (el) window.scrollTo({ top: el.offsetTop - 72, behavior: "smooth" });
+    };
+    window.addEventListener("ele:filterByCountry", onFilter);
+    return () => window.removeEventListener("ele:filterByCountry", onFilter);
+  }, [lang]);
 
   const sectorMap = {
-    fr: { "Aéroport": "Aéroport", "Hôtellerie": "Hôtellerie", "Eau": "Eau", "Public": "Public" },
-    en: { "Airport": "Aéroport", "Hospitality": "Hôtellerie", "Water": "Eau", "Public": "Public" },
+    fr: { "Aéroport": "Aéroport", "Hôtellerie": "Hôtellerie", "Tertiaire": "Tertiaire", "Eau": "Eau", "Santé": "Santé", "Public": "Public" },
+    en: { "Airport": "Aéroport", "Hospitality": "Hôtellerie", "Office": "Tertiaire", "Water": "Eau", "Health": "Santé", "Public": "Public" },
   };
   const sm = sectorMap[lang] || sectorMap.fr;
   const label = labels[filterIdx];
 
-  const filtered =
+  let filtered =
     filterIdx === 0 ? projects :
     label === "Tunisie" || label === "Tunisia" ? projects.filter(p => p.country.startsWith("Tunisie")) :
     label === "International" ? projects.filter(p => !p.country.startsWith("Tunisie")) :
     projects.filter(p => p.sector === (sm[label] || label));
 
+  if (debounced.trim()) {
+    const q = debounced.trim().toLowerCase();
+    filtered = filtered.filter(p =>
+      [p.title, p.country, p.client, p.sector, ...(p.specs || [])]
+        .join(" ").toLowerCase().includes(q)
+    );
+  }
+
   const eyebrow = lang === "en" ? "Selected references" : "Références sélectionnées";
   const headline = lang === "en" ? "Trusted on critical infrastructure" : "De confiance sur les infrastructures critiques";
+  const searchPh = lang === "en" ? "Search projects, sectors, specs…" : "Chercher un projet, secteur, équipement…";
+  const noResults = lang === "en" ? "No projects match your search." : "Aucun projet ne correspond à votre recherche.";
+  const resultsCount = (n) => lang === "en" ? `${n} project${n === 1 ? "" : "s"}` : `${n} projet${n === 1 ? "" : "s"}`;
 
   return (
-    <section id="references" style={{padding: "96px 32px", background: "var(--bg-page)"}}>
+    <section id="references" style={{padding: "96px 32px", background: "var(--bg-page)"}} className="ele-section-pad">
       <div style={{maxWidth: 1280, margin: "0 auto"}}>
-        <div style={{display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 40, flexWrap: "wrap", gap: 24}}>
+        <div className="ele-mobile-stack" style={{display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24, flexWrap: "wrap", gap: 24}}>
           <div>
             <div style={{color: "var(--ele-red)", fontSize: 12, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase"}}>{eyebrow}</div>
-            <h2 style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 56, lineHeight: 1.05, color: "var(--ele-navy)", textTransform: "uppercase", margin: "12px 0 0"}}>
+            <h2 style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "clamp(36px, 4.4vw, 56px)", lineHeight: 1.05, color: "var(--ele-navy)", textTransform: "uppercase", margin: "12px 0 0"}}>
               {headline}
             </h2>
           </div>
-          <div style={{display: "flex", gap: 6, flexWrap: "wrap"}}>
-            {labels.map((f, i) => (
-              <button key={i} onClick={() => setFilterIdx(i)} style={{
-                padding: "6px 14px", borderRadius: 999,
-                fontSize: 13, fontWeight: 500,
-                background: i === filterIdx ? "var(--ele-navy)" : "transparent",
-                color: i === filterIdx ? "#fff" : "var(--ele-navy)",
-                border: i === filterIdx ? "1px solid var(--ele-navy)" : "1px solid var(--border-2)",
-                cursor: "pointer", fontFamily: "var(--font-sans)"
-              }}>{f}</button>
-            ))}
+          <div style={{display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", justifyContent: "flex-end"}}>
+            <div style={{display: "flex", gap: 6, flexWrap: "wrap"}}>
+              {labels.map((f, i) => (
+                <button key={i} onClick={() => setFilterIdx(i)} style={{
+                  padding: "6px 14px", borderRadius: 999,
+                  fontSize: 13, fontWeight: 500,
+                  background: i === filterIdx ? "var(--ele-navy)" : "transparent",
+                  color: i === filterIdx ? "#fff" : "var(--ele-navy)",
+                  border: i === filterIdx ? "1px solid var(--ele-navy)" : "1px solid var(--border-2)",
+                  cursor: "pointer", fontFamily: "var(--font-sans)",
+                  transition: "background 150ms, color 150ms",
+                }}>{f}</button>
+              ))}
+            </div>
+            <div style={{position: "relative", width: 240}}>
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={searchPh}
+                aria-label={searchPh}
+                style={{
+                  width: "100%", boxSizing: "border-box",
+                  padding: "8px 32px 8px 34px",
+                  border: "1px solid var(--border-2)", borderRadius: 999,
+                  background: "#fff", color: "var(--ele-ink-1)",
+                  fontSize: 13, fontFamily: "var(--font-sans)", outline: "none",
+                  transition: "border-color 200ms",
+                }}
+                onFocus={(e) => e.target.style.borderColor = "var(--ele-red)"}
+                onBlur={(e) => e.target.style.borderColor = "var(--border-2)"}
+              />
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                style={{position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--fg-3)"}}>
+                <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>
+              </svg>
+              {query && (
+                <button onClick={() => setQuery("")} aria-label="Clear" style={{
+                  position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)",
+                  width: 20, height: 20, borderRadius: 999, padding: 0,
+                  background: "var(--ele-mist)", border: "none", cursor: "pointer",
+                  display: "grid", placeItems: "center", color: "var(--fg-3)", fontSize: 13, lineHeight: 1,
+                }}>×</button>
+              )}
+            </div>
           </div>
         </div>
-        <div style={{display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24}}>
-          {filtered.map((p, i) => <Reference key={i} p={p} lang={lang} />)}
+        <div style={{fontSize: 12, color: "var(--fg-3)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 24}}>
+          {resultsCount(filtered.length)}
         </div>
+        {filtered.length === 0 ? (
+          <div style={{padding: "80px 20px", textAlign: "center", color: "var(--fg-3)", fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 18}}>
+            {noResults}
+          </div>
+        ) : (
+          <div className="ele-grid-3">
+            {filtered.map((p, i) => <Reference key={p.title} p={p} lang={lang}
+              onClick={() => setModalProject(p)}
+              onInquire={(proj) => {
+                window.dispatchEvent(new CustomEvent("ele:preselectProject", { detail: proj }));
+                const el = document.getElementById("contact");
+                if (el) window.scrollTo({ top: el.offsetTop - 72, behavior: "smooth" });
+              }} />)}
+          </div>
+        )}
       </div>
+      <ProjectModal project={modalProject} lang={lang}
+        onClose={() => setModalProject(null)}
+        onInquire={(p) => {
+          window.dispatchEvent(new CustomEvent("ele:preselectProject", { detail: p }));
+          const el = document.getElementById("contact");
+          if (el) window.scrollTo({ top: el.offsetTop - 72, behavior: "smooth" });
+        }} />
     </section>
   );
 };
@@ -1201,6 +1642,11 @@ window.References = References;
 const CTA = ({ email = "inquiry.laadhar@gmail.com", subject = "Demande de devis — site ELE", lang = "fr" }) => {
   const [submitted, setSubmitted] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
+  const [errors, setErrors] = React.useState({});
+  const [values, setValues] = React.useState({
+    name: "", company: "", email: "", phone: "", project: "", message: ""
+  });
+  const messageRef = React.useRef(null);
 
   const labels = {
     fr: {
@@ -1219,6 +1665,11 @@ const CTA = ({ email = "inquiry.laadhar@gmail.com", subject = "Demande de devis 
       successTitle: "Message reçu",
       successBody: "Merci. Un ingénieur ELE vous répondra sous 48 h.",
       sendAnother: "Envoyer une autre demande",
+      errRequired: "Champ requis",
+      errEmail: "Email invalide",
+      errMinMsg: "Au moins 10 caractères",
+      response48: "Réponse sous 48 h",
+      privacy: "Vos données ne sont jamais partagées avec des tiers.",
     },
     en: {
       eyebrow: "Let's work together",
@@ -1236,13 +1687,72 @@ const CTA = ({ email = "inquiry.laadhar@gmail.com", subject = "Demande de devis 
       successTitle: "Message received",
       successBody: "Thank you. An ELE engineer will reply within 48 hours.",
       sendAnother: "Send another inquiry",
+      errRequired: "Required field",
+      errEmail: "Invalid email",
+      errMinMsg: "At least 10 characters",
+      response48: "Reply within 48 hours",
+      privacy: "Your information is never shared with third parties.",
     },
   };
 
   const lbl = labels[lang] || labels.fr;
 
+  // ── Listen for preselect events (from Service tiles, Project modal) ──
+  React.useEffect(() => {
+    const mapSvcToOpt = (title) => {
+      // best-effort lookup: find an option whose first word matches
+      const lower = title.toLowerCase();
+      return lbl.projectOptions.find(o =>
+        lower.startsWith(o.split(/[ /]/)[0].toLowerCase()) ||
+        o.toLowerCase().startsWith(lower.split(/[ /]/)[0])
+      ) || lbl.projectOptions[lbl.projectOptions.length - 1];
+    };
+    const onSvc = (e) => {
+      const opt = mapSvcToOpt(e.detail.title);
+      setValues(v => ({ ...v, project: opt }));
+      setTimeout(() => messageRef.current?.focus(), 600);
+    };
+    const onProj = (e) => {
+      const p = e.detail || {};
+      const prefill = lang === "en"
+        ? `I would like to discuss a project similar to "${p.title}" (${p.country}).\n\nMy site / requirements:\n`
+        : `Je souhaite discuter d'un projet similaire à « ${p.title} » (${p.country}).\n\nMon site / mes besoins :\n`;
+      setValues(v => ({ ...v, message: prefill }));
+      setTimeout(() => messageRef.current?.focus(), 600);
+    };
+    window.addEventListener("ele:preselectService", onSvc);
+    window.addEventListener("ele:preselectProject", onProj);
+    return () => {
+      window.removeEventListener("ele:preselectService", onSvc);
+      window.removeEventListener("ele:preselectProject", onProj);
+    };
+  }, [lang, lbl.projectOptions]);
+
+  const setField = (k, v) => {
+    setValues(prev => ({ ...prev, [k]: v }));
+    if (errors[k]) setErrors(prev => { const n = { ...prev }; delete n[k]; return n; });
+  };
+
+  const validate = () => {
+    const errs = {};
+    if (!values.name.trim()) errs.name = lbl.errRequired;
+    if (!values.email.trim()) errs.email = lbl.errRequired;
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) errs.email = lbl.errEmail;
+    if (!values.message.trim()) errs.message = lbl.errRequired;
+    else if (values.message.trim().length < 10) errs.message = lbl.errMinMsg;
+    return errs;
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      // focus first error
+      const first = ["name", "email", "message"].find(k => errs[k]);
+      if (first) e.target.querySelector(`[name="${first}"]`)?.focus();
+      return;
+    }
     setSubmitting(true);
     const form = e.target;
     const data = new FormData(form);
@@ -1254,11 +1764,16 @@ const CTA = ({ email = "inquiry.laadhar@gmail.com", subject = "Demande de devis 
           headers: { "Accept": "application/json" },
           body: data,
         });
-        if (res.ok) { setSubmitted(true); setSubmitting(false); return; }
+        if (res.ok) {
+          setSubmitted(true);
+          setSubmitting(false);
+          setValues({ name: "", company: "", email: "", phone: "", project: "", message: "" });
+          return;
+        }
       } catch (_) {}
     }
     // Fallback: open mailto
-    const body = `${lbl.name.replace(" *","")}: ${data.get("name")}\nEmail: ${data.get("email")}\n${lbl.phone}: ${data.get("phone")}\n${lbl.company}: ${data.get("company")}\n${lbl.projectType}: ${data.get("project")}\n\n${data.get("message")}`;
+    const body = `${lbl.name.replace(" *","")}: ${values.name}\nEmail: ${values.email}\n${lbl.phone}: ${values.phone}\n${lbl.company}: ${values.company}\n${lbl.projectType}: ${values.project}\n\n${values.message}`;
     window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     setSubmitting(false);
   };
@@ -1270,6 +1785,7 @@ const CTA = ({ email = "inquiry.laadhar@gmail.com", subject = "Demande de devis 
     borderRadius: 4, padding: "12px 14px",
     color: "#fff", fontSize: 14, fontFamily: "var(--font-sans)",
     outline: "none",
+    transition: "border-color 150ms, background 150ms",
   };
   const labelStyle = {
     display: "block",
@@ -1277,23 +1793,49 @@ const CTA = ({ email = "inquiry.laadhar@gmail.com", subject = "Demande de devis 
     textTransform: "uppercase", color: "rgba(255,255,255,0.6)",
     marginBottom: 6,
   };
+  const errStyle = {
+    fontSize: 11, color: "#FCA5A5",
+    marginTop: 4, fontWeight: 500,
+  };
 
   return (
   <section id="contact" style={{
     position: "relative", overflow: "hidden",
     background: "var(--ele-navy)", color: "#fff",
     padding: "80px 32px"
-  }}>
+  }} className="ele-section-pad">
     <div style={{position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)", backgroundSize: "48px 48px"}}/>
-    <div style={{maxWidth: 1280, margin: "0 auto", position: "relative", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "start"}}>
+    <div className="ele-grid-2-eq" style={{maxWidth: 1280, margin: "0 auto", position: "relative"}}>
       <div>
         <div style={{color: "var(--ele-red)", fontSize: 12, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 16}}>{lbl.eyebrow}</div>
-        <h2 style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 56, lineHeight: 1.05, textTransform: "uppercase", margin: "0 0 20px"}}>
+        <h2 style={{fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "clamp(36px, 4.4vw, 56px)", lineHeight: 1.05, textTransform: "uppercase", margin: "0 0 20px"}}>
           {lbl.headline}
         </h2>
-        <p style={{fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 22, lineHeight: 1.5, color: "rgba(255,255,255,0.85)", margin: "0 0 32px", maxWidth: 520}}>
+        <p style={{fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 22, lineHeight: 1.5, color: "rgba(255,255,255,0.85)", margin: "0 0 24px", maxWidth: 520}}>
           {lbl.lead}
         </p>
+
+        {/* Trust strip */}
+        <div style={{display: "flex", flexWrap: "wrap", gap: 18, marginBottom: 32}}>
+          {[
+            { icon: "⏱", t: lbl.response48 },
+            { icon: "🇹🇳", t: lang === "en" ? "Tunis-based · Africa-wide" : "Basé à Tunis · Couverture Afrique" },
+            { icon: "✓", t: lang === "en" ? "Since 1978" : "Depuis 1978" },
+          ].map((c, i) => (
+            <div key={i} style={{
+              display: "flex", alignItems: "center", gap: 8,
+              fontSize: 12, color: "rgba(255,255,255,0.75)",
+            }}>
+              <span style={{
+                width: 24, height: 24, borderRadius: 999,
+                background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)",
+                display: "grid", placeItems: "center", fontSize: 12,
+              }}>{c.icon}</span>
+              {c.t}
+            </div>
+          ))}
+        </div>
+
         <div style={{borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: 24, fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.7}}>
           <div style={{fontSize: 11, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ele-red)", marginBottom: 12}}>{lbl.orDirect}</div>
           ELE — Etablissement Laadhar d'Electricité<br/>
@@ -1320,7 +1862,7 @@ const CTA = ({ email = "inquiry.laadhar@gmail.com", subject = "Demande de devis 
           }}>{lbl.sendAnother}</button>
         </div>
       ) : (
-        <form onSubmit={onSubmit} style={{
+        <form onSubmit={onSubmit} noValidate style={{
           background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)",
           borderRadius: 8, padding: 28, display: "grid", gap: 16
         }}>
@@ -1332,35 +1874,51 @@ const CTA = ({ email = "inquiry.laadhar@gmail.com", subject = "Demande de devis 
           <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12}}>
             <div>
               <label style={labelStyle}>{lbl.name}</label>
-              <input style={inputStyle} type="text" name="name" required />
+              <input className={`ele-input${errors.name ? " ele-error" : ""}`} style={inputStyle} type="text" name="name"
+                value={values.name} onChange={(e) => setField("name", e.target.value)} />
+              {errors.name && <div style={errStyle}>{errors.name}</div>}
             </div>
             <div>
               <label style={labelStyle}>{lbl.company}</label>
-              <input style={inputStyle} type="text" name="company" />
+              <input className="ele-input" style={inputStyle} type="text" name="company"
+                value={values.company} onChange={(e) => setField("company", e.target.value)} />
             </div>
           </div>
           <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12}}>
             <div>
               <label style={labelStyle}>{lbl.emailLbl}</label>
-              <input style={inputStyle} type="email" name="email" required />
+              <input className={`ele-input${errors.email ? " ele-error" : ""}`} style={inputStyle} type="email" name="email"
+                value={values.email} onChange={(e) => setField("email", e.target.value)} />
+              {errors.email && <div style={errStyle}>{errors.email}</div>}
             </div>
             <div>
               <label style={labelStyle}>{lbl.phone}</label>
-              <input style={inputStyle} type="tel" name="phone" />
+              <input className="ele-input" style={inputStyle} type="tel" name="phone"
+                value={values.phone} onChange={(e) => setField("phone", e.target.value)} />
             </div>
           </div>
           <div>
             <label style={labelStyle}>{lbl.projectType}</label>
-            <select style={{...inputStyle, appearance: "none"}} name="project" defaultValue="">
+            <select className="ele-input" style={{...inputStyle, appearance: "none"}} name="project"
+              value={values.project} onChange={(e) => setField("project", e.target.value)}>
               <option value="" disabled style={{color: "#000"}}>{lbl.projectSelect}</option>
               {lbl.projectOptions.map((opt, i) => (
-                <option key={i} style={{color: "#000"}}>{opt}</option>
+                <option key={i} value={opt} style={{color: "#000"}}>{opt}</option>
               ))}
             </select>
           </div>
           <div>
             <label style={labelStyle}>{lbl.message}</label>
-            <textarea style={{...inputStyle, minHeight: 110, resize: "vertical", fontFamily: "var(--font-sans)"}} name="message" required placeholder={lbl.placeholder} />
+            <textarea ref={messageRef}
+              className={`ele-input${errors.message ? " ele-error" : ""}`}
+              style={{...inputStyle, minHeight: 110, resize: "vertical", fontFamily: "var(--font-sans)"}}
+              name="message" value={values.message}
+              onChange={(e) => setField("message", e.target.value)}
+              placeholder={lbl.placeholder} />
+            <div style={{display: "flex", justifyContent: "space-between", alignItems: "baseline"}}>
+              {errors.message ? <div style={errStyle}>{errors.message}</div> : <span/>}
+              <div style={{fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 4, fontVariantNumeric: "tabular-nums"}}>{values.message.length} / 2000</div>
+            </div>
           </div>
           <button type="submit" disabled={submitting} style={{
             background: "var(--ele-red)", color: "#fff", border: "none",
@@ -1368,6 +1926,9 @@ const CTA = ({ email = "inquiry.laadhar@gmail.com", subject = "Demande de devis 
             cursor: submitting ? "wait" : "pointer", fontFamily: "var(--font-sans)",
             opacity: submitting ? 0.7 : 1, marginTop: 4
           }}>{submitting ? lbl.sending : lbl.send}</button>
+          <div style={{fontSize: 11, color: "rgba(255,255,255,0.4)", textAlign: "center"}}>
+            {lbl.privacy}
+          </div>
         </form>
       )}
     </div>
@@ -1453,8 +2014,8 @@ const Footer = ({ lang = "fr" }) => {
 
   return (
     <footer style={{background: "var(--ele-navy-deep)", color: "#fff"}}>
-      <div style={{maxWidth: 1280, margin: "0 auto", padding: "64px 32px 32px"}}>
-        <div style={{display: "grid", gridTemplateColumns: "1.4fr repeat(3, 1fr)", gap: 48, marginBottom: 48}}>
+      <div style={{maxWidth: 1280, margin: "0 auto", padding: "64px 20px 32px"}}>
+        <div className="ele-grid-footer" style={{display: "grid", gridTemplateColumns: "1.4fr repeat(3, 1fr)", gap: 48, marginBottom: 48}}>
           <div>
             <img
               src="assets/logo_ele_white.png"
@@ -1504,6 +2065,11 @@ window.Footer = Footer;
 
   </script>
 
+  <!-- ═══ External utility + new feature scripts ═══ -->
+  <script type="text/babel" src="utils.jsx"></script>
+  <script type="text/babel" src="project-modal.jsx"></script>
+  <script type="text/babel" src="coverage-map.jsx"></script>
+
   <!-- ═══ App entry point ═══ -->
   <script type="text/babel">
     const App = () => {
@@ -1524,8 +2090,14 @@ window.Footer = Footer;
         if (t.navy)       document.documentElement.style.setProperty("--ele-navy", t.navy);
       }, [t.primaryRed, t.navy]);
 
+      // Route a coverage-map country click into the References filter
+      const onCountryClick = (country) => {
+        window.dispatchEvent(new CustomEvent("ele:filterByCountry", { detail: { country } }));
+      };
+
       return (
         <>
+          <ScrollProgress />
           <Header lang={lang} onLangChange={handleLangChange} />
           <section id="company-hero">
             <Hero
@@ -1540,8 +2112,12 @@ window.Footer = Footer;
           {t.showAbout && <About lang={lang} />}
           <Services lang={lang} />
           <References lang={lang} />
+          {t.showCoverage !== false && <Coverage lang={lang} onCountryClick={onCountryClick} />}
           <CTA lang={lang} email={t.ctaEmail} subject={t.ctaSubject} />
           <Footer lang={lang} />
+
+          <StickyQuoteCTA lang={lang} />
+          <BackToTop />
 
           <TweaksPanel title="ELE Tweaks">
             <TweakSection label="Brand">
@@ -1559,6 +2135,7 @@ window.Footer = Footer;
             <TweakSection label="Sections">
               <TweakToggle label="Show stats band" value={t.showStats} onChange={(v) => setTweak("showStats", v)} />
               <TweakToggle label="Show about / heritage" value={t.showAbout} onChange={(v) => setTweak("showAbout", v)} />
+              <TweakToggle label="Show coverage map" value={t.showCoverage !== false} onChange={(v) => setTweak("showCoverage", v)} />
             </TweakSection>
             <TweakSection label="Contact form">
               <TweakText label="Inquiry email" value={t.ctaEmail} onChange={(v) => setTweak("ctaEmail", v)} />

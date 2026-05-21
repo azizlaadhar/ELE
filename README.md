@@ -25,10 +25,14 @@ The site looks for project photos at `assets/projects/*.jpg` in this exact list:
 
 ```
 assets/projects/djerba_airport.jpg     — Aéroport Djerba-Zarzis
+assets/projects/sfax_thyna.jpg         — Aéroport Sfax-Thyna           [NEW]
 assets/projects/nour_palace.jpg        — Hôtel Nour Palace, Mahdia
 assets/projects/laico_maya.jpg         — Hôtel LAICO Maya Maya, Brazzaville
+assets/projects/elbo_brazzaville.jpg   — Immeuble R+9 ELBO, Brazzaville [NEW]
 assets/projects/sonede_pumping.jpg     — Station de pompage SONEDE, Billy
 assets/projects/supcom.jpg             — SUPCOM, Tunis
+assets/projects/maternite_monastir.jpg — Maternité & Néonatologie, Monastir [NEW]
+assets/projects/topnet.jpg             — TOPNET & HOTLINE, Tunis        [NEW]
 assets/projects/igh_pointe_noire.jpg   — IGH R+8, Pointe-Noire
 assets/projects/autoroute.jpg          — Autoroute Sfax–Gabès
 assets/projects/bardo.jpg              — Bardo, Tunis
