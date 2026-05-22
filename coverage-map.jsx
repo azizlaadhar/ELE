@@ -11,7 +11,7 @@ const PINS = [
   { id: "bizerte",     label: { fr: "Bizerte",      en: "Bizerte"      }, country: "Tunisie",    region: "north",  x: 46,   y: 23, count: 1 },
   { id: "monastir",    label: { fr: "Monastir",     en: "Monastir"     }, country: "Tunisie",    region: "north",  x: 54,   y: 35, count: 1 },
   { id: "mahdia",      label: { fr: "Mahdia",       en: "Mahdia"       }, country: "Tunisie",    region: "north",  x: 58,   y: 39, count: 1 },
-  { id: "sfax",        label: { fr: "Sfax",         en: "Sfax"         }, country: "Tunisie",    region: "north",  x: 53,   y: 45, count: 2 },
+  { id: "sfax",        label: { fr: "Sfax",         en: "Sfax"         }, country: "Tunisie",    region: "north",  x: 53,   y: 45, hq: true, count: 2 },
   { id: "djerba",      label: { fr: "Djerba",       en: "Djerba"       }, country: "Tunisie",    region: "north",  x: 60,   y: 51, count: 1 },
   { id: "brazzaville", label: { fr: "Brazzaville",  en: "Brazzaville"  }, country: "Congo",      region: "south",  x: 56,   y: 85, count: 2 },
   { id: "pointenoire", label: { fr: "Pointe-Noire", en: "Pointe-Noire" }, country: "Congo",      region: "south",  x: 46,   y: 90, count: 1 },
@@ -24,13 +24,13 @@ const Coverage = ({ lang = "fr", onCountryClick }) => {
 
   const labels = lang === "en"
     ? { eyebrow: "Coverage", headline: "On the ground across Africa",
-        lead: "Headquartered in Tunis, ELE has delivered projects across Tunisia for nearly 50 years and has been exporting expertise to Congo and Mauritania since 2008.",
+        lead: "Headquartered in Tunis and Sfax, ELE has delivered projects across Tunisia for nearly 50 years and has been exporting expertise to Congo since 2008.",
         cities: "Cities", countries: "Countries", projects: "Major projects",
-        hq: "HQ · Tunis", viewProjects: "View projects" }
+        hq: "HQ", viewProjects: "View projects" }
     : { eyebrow: "Présence", headline: "Sur le terrain à travers l'Afrique",
-        lead: "Basée à Tunis, ELE livre des projets en Tunisie depuis près de 50 ans et exporte son savoir-faire au Congo et en Mauritanie depuis 2008.",
+        lead: "Basée à Tunis et Sfax, ELE livre des projets en Tunisie depuis près de 50 ans et exporte son savoir-faire au Congo depuis 2008.",
         cities: "Villes", countries: "Pays", projects: "Projets majeurs",
-        hq: "Siège · Tunis", viewProjects: "Voir les projets" };
+        hq: "Siège", viewProjects: "Voir les projets" };
 
   // Compute country aggregates for the side list
   const byCountry = PINS.reduce((acc, p) => {
@@ -220,7 +220,7 @@ const Coverage = ({ lang = "fr", onCountryClick }) => {
                       pointerEvents: "none",
                     }}>
                       <span style={{color: "var(--ele-red)", fontWeight: 700}}>● </span>
-                      {labels.hq}
+                      {labels.hq} · {p.label[lang] || p.label.fr}
                     </div>
                   )}
                   {/* Hover/active label callout */}
